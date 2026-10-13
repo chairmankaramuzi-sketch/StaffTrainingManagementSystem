@@ -122,23 +122,34 @@ public class EnrollmentGradingPanel extends JPanel {
 
     private void showEnrollStaffDialog() {
         List<Employee> employees = service.getAllEmployees();
-        List<TrainingSession> sessions = service.getAllSessions();
+        List<TrainingSession> openSessions = service.getAllSessions().stream()
+                .filter(s -> s.getStatus() == SessionStatus.SCHEDULED || s.getStatus() == SessionStatus.IN_PROGRESS)
+                .toList();
 
-        if (employees.isEmpty() || sessions.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Active employees and sessions are required to enroll.", "Prerequisite Missing", JOptionPane.WARNING_MESSAGE);
+        if (employees.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No employees found. Please register an employee first.", "Prerequisite Missing", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (openSessions.isEmpty()) {
+            JOptionPane.showMessageDialog(this, 
+                "There are no active/open sessions available for enrollment.\n" +
+                "All current sessions are completed.\n\n" +
+                "To enroll staff, please go to the 'Training Sessions' tab and click '➕ Schedule New Session'.", 
+                "No Open Sessions", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
         JDialog dialog = new JDialog(mainFrame, "Enroll Staff in Training Session", true);
         dialog.setLayout(new BorderLayout(16, 16));
-        dialog.setSize(520, 260);
+        dialog.setSize(540, 270);
         dialog.setLocationRelativeTo(mainFrame);
 
         JPanel form = new JPanel(new GridLayout(2, 2, 10, 15));
         form.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
 
         JComboBox<Employee> cbEmp = UITheme.createComboBox(employees.toArray(new Employee[0]));
-        JComboBox<TrainingSession> cbSess = UITheme.createComboBox(sessions.toArray(new TrainingSession[0]));
+        JComboBox<TrainingSession> cbSess = UITheme.createComboBox(openSessions.toArray(new TrainingSession[0]));
 
         form.add(new JLabel("Select Staff Member:"));
         form.add(cbEmp);
