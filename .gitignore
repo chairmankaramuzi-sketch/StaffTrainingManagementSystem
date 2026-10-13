@@ -1,0 +1,27 @@
+# Maven build artifacts
+target/
+*.class
+
+# Log files
+*.log
+
+# NetBeans IDE
+nbproject/private/
+build/
+dist/
+nbbuild/
+nbdist/
+.nb-mvn-cache/
+
+# IntelliJ IDEA / Eclipse / VS Code
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS specific
+Thumbs.db
+Desktop.ini
+.DS_Store

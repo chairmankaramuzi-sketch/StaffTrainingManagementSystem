@@ -1,0 +1,7 @@
+id,firstName,lastName,email,phone,department,jobTitle,hireDate,active
+EMP-101,Alex,Morgan,alex.morgan@company.com,+1-555-0101,ENGINEERING,Senior Software Engineer,2024-10-13,true
+EMP-102,Samantha,Ray,samantha.ray@company.com,+1-555-0102,HUMAN_RESOURCES,Talent Development Lead,2025-04-13,true
+EMP-103,David,Kim,david.kim@company.com,+1-555-0103,FINANCE,Financial Analyst,2025-10-13,true
+EMP-104,Elena,Rostova,elena.rostova@company.com,+1-555-0104,ENGINEERING,DevOps Engineer,2026-02-13,true
+EMP-105,Marcus,Johnson,marcus.j@company.com,+1-555-0105,MARKETING,Product Marketing Specialist,2024-04-13,true
+EMP-106,Chloe,Bennett,chloe.b@company.com,+1-555-0106,LEGAL_COMPLIANCE,Compliance Officer,2026-04-13,true

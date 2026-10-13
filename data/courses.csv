@@ -1,0 +1,5 @@
+type,id,title,description,durationHours,level,maxCapacity,costPerSeat,specificAttr,flagAttr
+TECHNICAL,CRS-301,Design Patterns & Object-Oriented Java,Comprehensive deep-dive into clean architecture; SOLID principles; and design patterns.,24,ADVANCED,25,450.00,Java 21 / Spring / Clean Architecture,true
+SOFT_SKILLS,CRS-302,High-Impact Agile Leadership,Mastering team psychological safety; active coaching; and rapid feedback loops.,16,INTERMEDIATE,20,300.00,Empathetic Leadership,true
+COMPLIANCE,CRS-303,Enterprise Information Security & GDPR,Annual mandatory cyber defense; phishing mitigation; and data governance compliance.,8,BEGINNER,50,150.00,ISO 27001 / GDPR Article 32,true
+TECHNICAL,CRS-304,Docker; Kubernetes & Cloud Native CI/CD,Production-grade microservices deployment and container orchestration.,32,ADVANCED,20,600.00,Kubernetes / Helm / AWS,true

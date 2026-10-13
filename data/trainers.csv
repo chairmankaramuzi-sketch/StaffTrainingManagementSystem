@@ -1,0 +1,4 @@
+id,firstName,lastName,email,phone,specialization,yearsExp,hourlyRate,external
+TRN-201,Dr. Robert,Chen,robert.chen@training.org,+1-555-0201,Advanced Java & Cloud Architectures,12,120.00,true
+TRN-202,Sarah,Jenkins,sarah.jenkins@company.com,+1-555-0202,Corporate Leadership & Agile Coaching,8,85.00,false
+TRN-203,Michael,Vance,michael.vance@legalgroup.com,+1-555-0203,Cybersecurity & Data Privacy (GDPR/ISO),15,140.00,true

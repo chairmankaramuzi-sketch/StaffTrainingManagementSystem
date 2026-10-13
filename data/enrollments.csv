@@ -1,0 +1,5 @@
+id,sessionId,employeeId,employeeName,courseId,courseTitle,enrollmentDate,attended,score,status,certId,notes
+ENR-501,SES-401,EMP-101,Alex Morgan,CRS-301,Design Patterns & Object-Oriented Java,2026-09-23,true,92.0,PASSED,CERT-901,
+ENR-502,SES-402,EMP-102,Samantha Ray,CRS-303,Enterprise Information Security & GDPR,2026-09-29,true,95.0,PASSED,CERT-902,
+ENR-503,SES-402,EMP-103,David Kim,CRS-303,Enterprise Information Security & GDPR,2026-09-29,true,72.0,FAILED,,Scored 72%. Below compliance threshold of 85%. Retake mandatory.
+ENR-504,SES-403,EMP-105,Marcus Johnson,CRS-302,High-Impact Agile Leadership,2026-10-11,false,null,REGISTERED,,
