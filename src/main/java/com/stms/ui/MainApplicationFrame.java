@@ -8,6 +8,7 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -66,6 +67,19 @@ public class MainApplicationFrame extends JFrame {
         JPanel userBadgePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         userBadgePanel.setOpaque(false);
 
+        JButton btnDbStatus = new JButton("🗄️ JDBC Database (SQLite)");
+        btnDbStatus.setFont(UITheme.FONT_BOLD);
+        btnDbStatus.setBackground(new Color(0x0F, 0x76, 0x6E));
+        btnDbStatus.setForeground(Color.WHITE);
+        btnDbStatus.setFocusPainted(false);
+        btnDbStatus.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnDbStatus.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(0x2D, 0xD4, 0xBF), 1, true),
+                BorderFactory.createEmptyBorder(6, 12, 6, 12)
+        ));
+        btnDbStatus.setToolTipText("Inspect JDBC Connection, Relational Tables, and SQL Schema");
+        btnDbStatus.addActionListener(e -> new DatabaseDiagnosticsDialog(this, service).setVisible(true));
+
         JLabel lblBadge = new JLabel("  👤 Role: HR Administrator  ");
         lblBadge.setOpaque(true);
         lblBadge.setBackground(new Color(0x1E, 0x29, 0x3B));
@@ -76,6 +90,7 @@ public class MainApplicationFrame extends JFrame {
                 BorderFactory.createEmptyBorder(6, 12, 6, 12)
         ));
 
+        userBadgePanel.add(btnDbStatus);
         userBadgePanel.add(lblBadge);
 
         headerPanel.add(titleBox, BorderLayout.WEST);
@@ -118,7 +133,7 @@ public class MainApplicationFrame extends JFrame {
         lblStatus.setForeground(UITheme.TEXT_MUTED);
         updateStatusBar();
 
-        JLabel lblEnv = new JLabel("Apache NetBeans / Java SE 17+ Ready | OOP Architecture");
+        JLabel lblEnv = new JLabel("Apache NetBeans | Java SE 17+ | Java Swing GUI | JDBC Relational DB");
         lblEnv.setFont(UITheme.FONT_SMALL);
         lblEnv.setForeground(UITheme.TEXT_MUTED);
 
@@ -128,7 +143,7 @@ public class MainApplicationFrame extends JFrame {
     }
 
     public void updateStatusBar() {
-        lblStatus.setText(String.format("🟢 Storage: Active CSV File Persistence | Staff: %d | Courses: %d | Sessions: %d | Certificates: %d",
+        lblStatus.setText(String.format("🟢 Storage: JDBC SQLite Active (data/stms.db) | Staff: %d | Courses: %d | Sessions: %d | Certificates: %d",
                 service.getTotalStaffCount(), service.getTotalCoursesCount(),
                 service.getTotalSessionsCount(), service.getTotalCertificatesCount()));
     }

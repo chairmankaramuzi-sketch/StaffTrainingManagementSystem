@@ -95,6 +95,7 @@ public class TrainingManagerService {
     public boolean deleteEmployee(String id) {
         boolean removed = employeeRepository.deleteById(id);
         if (removed) {
+            com.stms.database.DatabaseManager.getInstance().deleteEmployee(id);
             syncToStorage();
             notificationService.logEvent("Deleted employee ID: " + id);
         }
@@ -150,6 +151,7 @@ public class TrainingManagerService {
     public boolean deleteCourse(String courseId) {
         boolean removed = courseRepository.deleteById(courseId);
         if (removed) {
+            com.stms.database.DatabaseManager.getInstance().deleteCourse(courseId);
             syncToStorage();
             notificationService.logEvent("Removed course: " + courseId);
         }

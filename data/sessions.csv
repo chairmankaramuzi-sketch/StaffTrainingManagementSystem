@@ -1,4 +1,4 @@
 id,courseId,courseTitle,trainerId,trainerName,sessionDate,timeSlot,locationOrUrl,maxSeats,status
-SES-401,CRS-301,Design Patterns & Object-Oriented Java,TRN-201,Dr. Robert Chen,2026-10-03,09:00 - 17:00,Tech Lab Room 302,20,COMPLETED
-SES-402,CRS-303,Enterprise Information Security & GDPR,TRN-203,Michael Vance,2026-10-08,10:00 - 14:00,Zoom Virtual Auditorium,50,COMPLETED
-SES-403,CRS-302,High-Impact Agile Leadership,TRN-202,Sarah Jenkins,2026-10-20,09:30 - 16:30,Executive Suite Room 101,15,SCHEDULED
+SES-401,CRS-301,Design Patterns & Object-Oriented Java,TRN-201,Dr. Robert Chen,2026-10-04,09:00 - 17:00,Tech Lab Room 302,20,COMPLETED
+SES-402,CRS-303,Enterprise Information Security & GDPR,TRN-203,Michael Vance,2026-10-09,10:00 - 14:00,Zoom Virtual Auditorium,50,COMPLETED
+SES-403,CRS-302,High-Impact Agile Leadership,TRN-202,Sarah Jenkins,2026-10-21,09:30 - 16:30,Executive Suite Room 101,15,SCHEDULED

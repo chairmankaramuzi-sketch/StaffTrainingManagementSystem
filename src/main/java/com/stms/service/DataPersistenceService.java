@@ -50,8 +50,12 @@ public class DataPersistenceService {
                               SessionRepository sessionRepo,
                               EnrollmentRepository enrollmentRepo,
                               CertificateRepository certificateRepo) {
+        com.stms.database.DatabaseManager db = com.stms.database.DatabaseManager.getInstance();
+        db.initializeSchema();
+
         File empFile = new File(dataDirectory, "employees.csv");
-        if (!empFile.exists() || empFile.length() == 0) {
+        if (db.isDatabaseEmpty() && (!empFile.exists() || empFile.length() == 0)) {
+            System.out.println("Database is empty. Seeding initial demonstration data via JDBC...");
             seedSampleData(employeeRepo, trainerRepo, courseRepo, sessionRepo, enrollmentRepo, certificateRepo);
             saveAll(employeeRepo, trainerRepo, courseRepo, sessionRepo, enrollmentRepo, certificateRepo);
         } else {
@@ -65,6 +69,28 @@ public class DataPersistenceService {
                         SessionRepository sessionRepo,
                         EnrollmentRepository enrollmentRepo,
                         CertificateRepository certificateRepo) {
+        // 1. Primary Relational Storage via JDBC PreparedStatement Execution
+        com.stms.database.DatabaseManager db = com.stms.database.DatabaseManager.getInstance();
+        for (Employee e : employeeRepo.findAll()) {
+            db.insertEmployee(e);
+        }
+        for (Trainer t : trainerRepo.findAll()) {
+            db.insertTrainer(t);
+        }
+        for (TrainingCourse c : courseRepo.findAll()) {
+            db.insertCourse(c);
+        }
+        for (com.stms.model.TrainingSession s : sessionRepo.findAll()) {
+            db.insertSession(s);
+        }
+        for (Enrollment en : enrollmentRepo.findAll()) {
+            db.insertEnrollment(en);
+        }
+        for (Certificate cert : certificateRepo.findAll()) {
+            db.insertCertificate(cert);
+        }
+
+        // 2. CSV File Export Backup
         saveEmployees(employeeRepo);
         saveTrainers(trainerRepo);
         saveCourses(courseRepo);
@@ -79,12 +105,27 @@ public class DataPersistenceService {
                         SessionRepository sessionRepo,
                         EnrollmentRepository enrollmentRepo,
                         CertificateRepository certificateRepo) {
-        loadEmployees(employeeRepo);
-        loadTrainers(trainerRepo);
-        loadCourses(courseRepo);
-        loadSessions(sessionRepo);
-        loadEnrollments(enrollmentRepo);
-        loadCertificates(certificateRepo);
+        com.stms.database.DatabaseManager db = com.stms.database.DatabaseManager.getInstance();
+        java.util.List<Employee> employees = db.loadAllEmployees();
+
+        if (!employees.isEmpty()) {
+            employees.forEach(employeeRepo::save);
+            db.loadAllTrainers().forEach(trainerRepo::save);
+            db.loadAllCourses().forEach(courseRepo::save);
+            db.loadAllSessions().forEach(sessionRepo::save);
+            db.loadAllEnrollments().forEach(enrollmentRepo::save);
+            db.loadAllCertificates().forEach(certificateRepo::save);
+            System.out.println("JDBC Database: Loaded all records from relational database tables successfully.");
+        } else {
+            // Fallback to CSV if DB had no rows
+            loadEmployees(employeeRepo);
+            loadTrainers(trainerRepo);
+            loadCourses(courseRepo);
+            loadSessions(sessionRepo);
+            loadEnrollments(enrollmentRepo);
+            loadCertificates(certificateRepo);
+            System.out.println("Loaded records from local CSV storage.");
+        }
     }
 
     // --- CSV SAVING ---

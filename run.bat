@@ -19,7 +19,7 @@ if exist "target\staff-training-management-system-1.0.0.jar" (
     "%JAVA_EXE%" -jar "target\staff-training-management-system-1.0.0.jar"
 ) else (
     echo Running from compiled classes...
-    "%JAVA_EXE%" -cp "target\classes" com.stms.Main
+    "%JAVA_EXE%" -cp "target\classes;target\lib\*" com.stms.Main
 )
 
 endlocal

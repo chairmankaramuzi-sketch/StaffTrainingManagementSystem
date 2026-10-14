@@ -31,7 +31,7 @@ The system implements the four core pillars of **Object-Oriented Programming (OO
 2. Click **File** $\rightarrow$ **Open Project...** (`Ctrl + Shift + O`).
 3. Browse to:
    ```
-   C:\Users\KARAMUZI\.gemini\antigravity-ide\scratch\StaffTrainingManagementSystem
+   C:\Users\KARAMUZI\Desktop\StaffTrainingManagementSystem
    ```
 4. NetBeans will automatically detect the `pom.xml` and recognize it as a **Maven Java Application**.
 5. Click **Open Project**.
@@ -43,72 +43,65 @@ The system implements the four core pillars of **Object-Oriented Programming (OO
 ### Alternative: Run from Command Line / Explorer
 - Simply double-click `run.bat` located inside the project directory, or run:
   ```powershell
-  cd C:\Users\KARAMUZI\.gemini\antigravity-ide\scratch\StaffTrainingManagementSystem
+  cd C:\Users\KARAMUZI\Desktop\StaffTrainingManagementSystem
   .\run.bat
   ```
 
 ---
 
-## 📊 3. System Features & Modules
+## 📊 3. System Features & Technologies Used
 
-1. **📊 Executive Dashboard**:
-   - Real-time KPI summary cards: Total Staff, Training Courses, Scheduled Sessions, Total Enrollments, Overall Pass Rate (%), and Certificates Issued.
-   - Live activity & audit stream logging all transactions.
+The application strictly fulfills all coursework requirements using standalone desktop Java technologies:
 
-2. **👥 Staff Directory Management**:
-   - Complete employee records with department affiliation, job titles, and contact details.
-   - Dynamic search by employee name, ID, or job title.
-   - Department filter dropdown (Engineering, HR, Finance, Marketing, Operations, etc.).
-   - Full CRUD: Add Staff dialog, Edit Staff, and Delete Staff.
+### 1. Front End (User Interface) - Java Swing
+- **Modern Graphical User Interface**: Custom styled UI with dark header, tabbed workflow navigation, responsive tables, modal dialogs, and real-time statistics cards.
+- **Event-Driven Architecture**: Fully decoupled Swing Event Dispatch Thread (EDT) with ActionListeners, DocumentFilters for dynamic search, and TableModel synchronization.
+- **Diagnostics Dialog**: Dedicated `DatabaseDiagnosticsDialog` allowing live JDBC testing, table inspection, and SQL schema viewing right inside the app!
 
-3. **📚 Course Catalog**:
-   - Multi-disciplinary course management:
-     - **Technical Courses**: Track technology stack and hands-on lab requirements.
-     - **Soft Skills Courses**: Focus on leadership, psychological safety, and teamwork.
-     - **Mandatory Compliance**: Strict annual regulatory courses (e.g. GDPR, ISO 27001).
-   - Built with the **Factory Pattern** (`CourseFactory.createCourse(...)`).
+### 2. Back End (Application Logic) - Pure Java OOP
+- **Encapsulation, Inheritance, Polymorphism, and Abstraction**.
+- **Factory Method Pattern**: `CourseFactory` dynamically instantiates `TechnicalCourse`, `SoftSkillsCourse`, and `ComplianceCourse`.
+- **Business Rule Engine**: Automated polymorphic pass/fail evaluation and dynamic verification certificate generation.
 
-4. **📅 Training Sessions & Scheduling**:
-   - Session scheduling with assigned instructors, room/virtual link, and seat capacity limits.
-   - Prevents overbooking; tracks seat availability.
-   - Lifecycle state machine: `SCHEDULED` $\rightarrow$ `IN_PROGRESS` $\rightarrow$ `COMPLETED` / `CANCELLED`.
-   - "View Attendees" dialog displays all registered staff in real time.
-
-5. **📝 Enrollment & Polymorphic Grading**:
-   - Enrolls staff into sessions with duplicate enrollment and capacity checks.
-   - Record Attendance & Assessment Scores (0 - 100%).
-   - **Polymorphic Certification Engine**: Evaluates completion criteria according to the course type. If passed, automatically generates and links a unique verification certificate!
-
-6. **📄 Official Transcripts & Reports**:
-   - Formal corporate **Staff Training Transcript** generation with completed courses, scores, and valid certificates.
-   - Departmental Participation Summary Report.
-   - Export report directly to a `.txt` file on disk.
-
-7. **💾 Automated File Persistence**:
-   - Real-time synchronization to clean CSV storage in the `data/` folder.
-   - Automatically preloaded with realistic demo data on initial startup.
+### 3. Database Connectivity - JDBC (Java Database Connectivity)
+- **Standard JDBC API**: Uses `java.sql.Connection`, `java.sql.DriverManager`, `java.sql.PreparedStatement`, `java.sql.Statement`, and `java.sql.ResultSet`.
+- **Relational Tables**:
+  - `employees`: Staff records with department, job title, and hire dates.
+  - `trainers`: Instructors with hourly rates and specializations.
+  - `courses`: Polymorphic courses with specific attributes and passing criteria.
+  - `sessions`: Scheduled training sessions with capacity constraints.
+  - `enrollments`: Employee session enrollments with attendance, scores, and status.
+  - `certificates`: Official credentials with unique cryptographic verification codes.
+- **Out-of-the-Box Zero Configuration**: Bundled with embedded SQLite JDBC (`data/stms.db`) so evaluators can run the project on any PC in NetBeans without configuring database servers or passwords.
+- **SQL DDL Schema File**: Included at `database/schema.sql` for inspection or import into MySQL / NetBeans Services database explorer.
+- **Dual Persistence Backup**: Auto-synchronizes to clean CSV files in the `data/` folder.
 
 ---
 
 ## 📁 4. Project Directory Structure
 ```
 StaffTrainingManagementSystem/
-├── pom.xml                                    (Maven project configuration)
-├── README.md                                  (Full documentation & instructions)
+├── pom.xml                                    (Maven project configuration with JDBC drivers)
+├── README.md                                  (Full documentation & coursework instructions)
 ├── run.bat                                    (1-Click Windows launch script)
-├── data/                                      (Persistent CSV data storage)
-│   ├── employees.csv
-│   ├── trainers.csv
-│   ├── courses.csv
-│   ├── sessions.csv
-│   ├── enrollments.csv
-│   └── certificates.csv
+├── database/                                  (SQL Schema DDL)
+│   └── schema.sql                             (ANSI SQL / SQLite / MySQL DDL script)
+├── data/                                      (Persistent Storage)
+│   ├── stms.db                                (Primary SQLite JDBC relational database)
+│   ├── employees.csv                          (CSV backup)
+│   ├── trainers.csv                           (CSV backup)
+│   ├── courses.csv                            (CSV backup)
+│   ├── sessions.csv                           (CSV backup)
+│   ├── enrollments.csv                        (CSV backup)
+│   └── certificates.csv                       (CSV backup)
 └── src/
     └── main/
         └── java/
             └── com/
                 └── stms/
                     ├── Main.java              (Main Application Entry Point)
+                    ├── database/              (JDBC Connectivity Layer)
+                    │   └── DatabaseManager.java (JDBC Connection & PreparedStatements)
                     ├── model/                 (OOP Domain Entities & Enums)
                     │   ├── Person.java        (Abstract base)
                     │   ├── Employee.java      (Inherits Person)
