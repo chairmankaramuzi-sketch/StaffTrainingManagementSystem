@@ -96,9 +96,12 @@ public class CertificateDAO {
 
     public Optional<Certificate> findByVerificationCode(String code) {
         String sql = "SELECT id, enrollment_id, employee_id, employee_name, course_id, course_title, " +
-                     "course_category, issue_date, expiry_date, verification_code FROM certificates WHERE verification_code = ?";
+                     "course_category, issue_date, expiry_date, verification_code FROM certificates " +
+                     "WHERE verification_code = ? COLLATE NOCASE OR id = ? COLLATE NOCASE";
         try (Connection conn = dbManager.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, code.trim());
+            String trimmed = code.trim();
+            pstmt.setString(1, trimmed);
+            pstmt.setString(2, trimmed);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     return Optional.of(mapRowToCertificate(rs));

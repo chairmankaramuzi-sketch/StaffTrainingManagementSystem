@@ -97,10 +97,13 @@ public class TrainerManagementPanel extends JPanel {
         JButton btnDelete = UITheme.createButton("🗑️ Delete", UITheme.DANGER, UITheme.TEXT_LIGHT);
         btnDelete.addActionListener(e -> deleteSelectedTrainer());
 
-        actionPanel.add(btnAdd);
-        actionPanel.add(btnEdit);
-        actionPanel.add(btnToggle);
-        actionPanel.add(btnDelete);
+        // Trainer records can only be changed by HR Administrators
+        if (mainFrame.isAdmin()) {
+            actionPanel.add(btnAdd);
+            actionPanel.add(btnEdit);
+            actionPanel.add(btnToggle);
+            actionPanel.add(btnDelete);
+        }
 
         topBar.add(filterPanel, BorderLayout.WEST);
         topBar.add(actionPanel, BorderLayout.EAST);

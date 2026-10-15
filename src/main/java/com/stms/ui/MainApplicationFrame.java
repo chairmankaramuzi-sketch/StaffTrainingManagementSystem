@@ -1,9 +1,13 @@
 package com.stms.ui;
 
+import com.stms.model.User;
+import com.stms.model.UserRole;
+import com.stms.service.AuthService;
 import com.stms.service.TrainingManagerService;
 import com.stms.ui.components.UITheme;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -11,6 +15,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 
@@ -19,6 +24,9 @@ import javax.swing.JTabbedPane;
  */
 public class MainApplicationFrame extends JFrame {
     private final TrainingManagerService service;
+    private final AuthService authService;
+    private final User currentUser;
+    private final Runnable onLogout;
 
     private JTabbedPane tabbedPane;
     private DashboardPanel dashboardPanel;
@@ -28,13 +36,21 @@ public class MainApplicationFrame extends JFrame {
     private SessionSchedulePanel sessionPanel;
     private EnrollmentGradingPanel enrollmentPanel;
     private ReportsPanel reportsPanel;
+    private UserManagementPanel userPanel;
+
+    /** All panels in their original tab order (index used by switchToTab). */
+    private Component[] allPanels;
 
     private JLabel lblStatus;
 
-    public MainApplicationFrame(TrainingManagerService service) {
+    public MainApplicationFrame(TrainingManagerService service, AuthService authService, User currentUser, Runnable onLogout) {
         this.service = service;
+        this.authService = authService;
+        this.currentUser = currentUser;
+        this.onLogout = onLogout;
 
-        setTitle("Staff Training Management System (STMS) - NetBeans Edition");
+        setTitle("Staff Training Management System (STMS) - " + currentUser.getFullName()
+                + " [" + currentUser.getRole().getDisplayName() + "]");
         setSize(1180, 760);
         setMinimumSize(new Dimension(960, 600));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -81,7 +97,7 @@ public class MainApplicationFrame extends JFrame {
         btnDbStatus.setToolTipText("Inspect JDBC Connection, Relational Tables, and SQL Schema");
         btnDbStatus.addActionListener(e -> new DatabaseDiagnosticsDialog(this, service).setVisible(true));
 
-        JLabel lblBadge = new JLabel("  👤 Role: HR Administrator  ");
+        JLabel lblBadge = new JLabel(currentUser.getFullName() + "  |  Role: " + currentUser.getRole().getDisplayName());
         lblBadge.setOpaque(true);
         lblBadge.setBackground(new Color(0x1E, 0x29, 0x3B));
         lblBadge.setForeground(new Color(0x38, 0xBD, 0xF8));
@@ -90,9 +106,33 @@ public class MainApplicationFrame extends JFrame {
                 BorderFactory.createLineBorder(new Color(0x38, 0xBD, 0xF8), 1, true),
                 BorderFactory.createEmptyBorder(6, 12, 6, 12)
         ));
+        lblBadge.setToolTipText("Signed in as " + currentUser.getUsername());
 
-        userBadgePanel.add(btnDbStatus);
+        JButton btnChangePassword = new JButton("🔑 Change Password");
+        btnChangePassword.setFont(UITheme.FONT_BOLD);
+        btnChangePassword.setBackground(new Color(0x33, 0x41, 0x55));
+        btnChangePassword.setForeground(Color.WHITE);
+        btnChangePassword.setFocusPainted(false);
+        btnChangePassword.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnChangePassword.setBorder(BorderFactory.createEmptyBorder(7, 14, 7, 14));
+        btnChangePassword.addActionListener(e -> UserManagementPanel.showChangePasswordDialog(this, authService, currentUser));
+
+        JButton btnLogout = new JButton("Logout");
+        btnLogout.setFont(UITheme.FONT_BOLD);
+        btnLogout.setBackground(UITheme.DANGER);
+        btnLogout.setForeground(Color.WHITE);
+        btnLogout.setFocusPainted(false);
+        btnLogout.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnLogout.setBorder(BorderFactory.createEmptyBorder(7, 14, 7, 14));
+        btnLogout.addActionListener(e -> logout());
+
+        // Database diagnostics is an administrator tool
+        if (currentUser.getRole() == UserRole.HR_ADMINISTRATOR) {
+            userBadgePanel.add(btnDbStatus);
+        }
         userBadgePanel.add(lblBadge);
+        userBadgePanel.add(btnChangePassword);
+        userBadgePanel.add(btnLogout);
 
         headerPanel.add(titleBox, BorderLayout.WEST);
         headerPanel.add(userBadgePanel, BorderLayout.EAST);
@@ -110,14 +150,20 @@ public class MainApplicationFrame extends JFrame {
         sessionPanel = new SessionSchedulePanel(service, this);
         enrollmentPanel = new EnrollmentGradingPanel(service, this);
         reportsPanel = new ReportsPanel(service, this);
+        userPanel = new UserManagementPanel(authService, currentUser);
 
-        tabbedPane.addTab("📊 Dashboard", dashboardPanel);
-        tabbedPane.addTab("👥 Staff Directory", staffPanel);
-        tabbedPane.addTab("👨‍🏫 Trainers", trainerPanel);
-        tabbedPane.addTab("📚 Course Catalog", coursePanel);
-        tabbedPane.addTab("📅 Training Sessions", sessionPanel);
-        tabbedPane.addTab("📝 Enroll & Grade", enrollmentPanel);
-        tabbedPane.addTab("📄 Reports & Transcripts", reportsPanel);
+        allPanels = new Component[] {
+            dashboardPanel, staffPanel, trainerPanel, coursePanel, sessionPanel, enrollmentPanel, reportsPanel, userPanel
+        };
+        String[] titles = {
+            "📊 Dashboard", "👥 Staff Directory", "👨‍🏫 Trainers", "📚 Course Catalog",
+            "📅 Training Sessions", "📝 Enroll & Grade", "📄 Reports & Transcripts", "🔐 User Accounts"
+        };
+        for (int i = 0; i < allPanels.length; i++) {
+            if (canAccessTab(i)) {
+                tabbedPane.addTab(titles[i], allPanels[i]);
+            }
+        }
 
         tabbedPane.addChangeListener(e -> refreshAllViews());
 
@@ -151,9 +197,62 @@ public class MainApplicationFrame extends JFrame {
                 service.getTotalCoursesCount(), service.getTotalSessionsCount(), service.getTotalCertificatesCount()));
     }
 
+    /**
+     * Switches to a tab using its original index (0=Dashboard ... 6=Reports).
+     * Does nothing if the current user's role cannot access that tab.
+     */
     public void switchToTab(int index) {
-        if (index >= 0 && index < tabbedPane.getTabCount()) {
-            tabbedPane.setSelectedIndex(index);
+        if (index >= 0 && index < allPanels.length) {
+            int pos = tabbedPane.indexOfComponent(allPanels[index]);
+            if (pos >= 0) {
+                tabbedPane.setSelectedIndex(pos);
+            }
+        }
+    }
+
+    /**
+     * Role-based access: which tabs (by original index) each role may see.
+     */
+    private boolean canAccessTab(int index) {
+        switch (currentUser.getRole()) {
+            case HR_ADMINISTRATOR:
+                return true;
+            case TRAINER:
+                // Dashboard, Trainers, Course Catalog, Sessions, Enroll & Grade, Reports
+                return index != 1 && index != 7;
+            case EMPLOYEE:
+                // Dashboard, Course Catalog, Reports
+                return index == 0 || index == 3 || index == 6;
+            default:
+                return false;
+        }
+    }
+
+    public boolean isAdmin() {
+        return currentUser != null && currentUser.getRole() == UserRole.HR_ADMINISTRATOR;
+    }
+
+    public boolean isTrainerOrAdmin() {
+        if (currentUser == null) return false;
+        return currentUser.getRole() == UserRole.HR_ADMINISTRATOR || currentUser.getRole() == UserRole.TRAINER;
+    }
+
+    public User getCurrentUser() {
+        return currentUser;
+    }
+
+    public AuthService getAuthService() {
+        return authService;
+    }
+
+    private void logout() {
+        int choice = JOptionPane.showConfirmDialog(this, "Are you sure you want to log out?",
+                "Logout", JOptionPane.YES_NO_OPTION);
+        if (choice == JOptionPane.YES_OPTION) {
+            dispose();
+            if (onLogout != null) {
+                onLogout.run();
+            }
         }
     }
 
@@ -171,6 +270,9 @@ public class MainApplicationFrame extends JFrame {
         sessionPanel.loadSessionsTable();
         enrollmentPanel.loadEnrollmentsTable();
         reportsPanel.loadEmployeesDropdown();
+        if (userPanel != null) {
+            userPanel.loadUsers();
+        }
         updateStatusBar();
     }
 }

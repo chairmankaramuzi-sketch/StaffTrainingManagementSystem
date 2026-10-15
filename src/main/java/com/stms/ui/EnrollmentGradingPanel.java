@@ -91,9 +91,13 @@ public class EnrollmentGradingPanel extends JPanel {
         JButton btnCancel = UITheme.createButton("❌ Cancel Enrollment", UITheme.DANGER, UITheme.TEXT_LIGHT);
         btnCancel.addActionListener(e -> cancelSelectedEnrollment());
 
-        actionPanel.add(btnEnroll);
-        actionPanel.add(btnGrade);
-        actionPanel.add(btnCancel);
+        if (mainFrame.isTrainerOrAdmin()) {
+            actionPanel.add(btnEnroll);
+            actionPanel.add(btnGrade);
+        }
+        if (mainFrame.isAdmin()) {
+            actionPanel.add(btnCancel);
+        }
 
         topBar.add(filterPanel, BorderLayout.WEST);
         topBar.add(actionPanel, BorderLayout.EAST);

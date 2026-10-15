@@ -93,11 +93,15 @@ public class SessionSchedulePanel extends JPanel {
         JButton btnCancel = UITheme.createButton("❌ Cancel / Delete", UITheme.DANGER, UITheme.TEXT_LIGHT);
         btnCancel.addActionListener(e -> cancelOrDeleteSession());
 
-        actionPanel.add(btnSchedule);
-        actionPanel.add(btnEdit);
-        actionPanel.add(btnChangeStatus);
+        if (mainFrame.isTrainerOrAdmin()) {
+            actionPanel.add(btnSchedule);
+            actionPanel.add(btnEdit);
+            actionPanel.add(btnChangeStatus);
+        }
         actionPanel.add(btnAttendees);
-        actionPanel.add(btnCancel);
+        if (mainFrame.isAdmin()) {
+            actionPanel.add(btnCancel);
+        }
 
         topBar.add(filterPanel, BorderLayout.WEST);
         topBar.add(actionPanel, BorderLayout.EAST);

@@ -20,6 +20,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
 /**
  * Reporting, Transcripts & Certificate Verification Panel.
@@ -135,16 +136,56 @@ public class ReportsPanel extends JPanel {
     }
 
     private void showVerifyCertificateDialog() {
-        String code = JOptionPane.showInputDialog(mainFrame,
-                "Enter Certificate Verification Code (e.g., VER-JAVA-901):\n\n" +
-                "Tip: You can find verification codes on issued transcripts or the certificate database.",
-                "Verify Certificate Authenticity", JOptionPane.QUESTION_MESSAGE);
+        List<Certificate> certs = service.getAllCertificates();
 
-        if (code == null || code.trim().isEmpty()) {
+        JPanel panel = new JPanel(new BorderLayout(0, 10));
+
+        JLabel lblPrompt = new JLabel("<html><b>Enter Certificate Verification Code or Certificate ID:</b><br>"
+                + "<span style='color:gray;'>Example: STMS-C214D816 or CERT-901</span></html>");
+        panel.add(lblPrompt, BorderLayout.NORTH);
+
+        JPanel centerPanel = new JPanel(new java.awt.GridLayout(0, 1, 6, 6));
+        JTextField txtCode = UITheme.createTextField(26);
+
+        if (!certs.isEmpty()) {
+            JLabel lblSelect = new JLabel("Or select an issued certificate from the database:");
+            lblSelect.setFont(UITheme.FONT_SMALL);
+            lblSelect.setForeground(UITheme.TEXT_MUTED);
+
+            JComboBox<String> cbRecent = new JComboBox<>();
+            cbRecent.setFont(UITheme.FONT_REGULAR);
+            cbRecent.addItem("-- Select an issued certificate --");
+            for (Certificate c : certs) {
+                cbRecent.addItem(String.format("[%s] %s | Code: %s",
+                        c.getId(), c.getEmployeeName(), c.getVerificationCode()));
+            }
+            cbRecent.addActionListener(e -> {
+                int idx = cbRecent.getSelectedIndex();
+                if (idx > 0 && idx <= certs.size()) {
+                    txtCode.setText(certs.get(idx - 1).getVerificationCode());
+                }
+            });
+            centerPanel.add(lblSelect);
+            centerPanel.add(cbRecent);
+        }
+
+        centerPanel.add(new JLabel("Verification Code or Certificate ID:"));
+        centerPanel.add(txtCode);
+        panel.add(centerPanel, BorderLayout.CENTER);
+
+        int result = JOptionPane.showConfirmDialog(mainFrame, panel,
+                "Verify Certificate Authenticity", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+        if (result != JOptionPane.OK_OPTION) {
             return;
         }
 
-        Optional<Certificate> optCert = service.verifyCertificate(code.trim());
+        String code = txtCode.getText().trim();
+        if (code.isEmpty()) {
+            return;
+        }
+
+        Optional<Certificate> optCert = service.verifyCertificate(code);
         if (optCert.isPresent()) {
             Certificate cert = optCert.get();
             String details = String.format(
@@ -168,8 +209,8 @@ public class ReportsPanel extends JPanel {
             JOptionPane.showMessageDialog(mainFrame, details, "Certificate Verification Result", JOptionPane.INFORMATION_MESSAGE);
         } else {
             JOptionPane.showMessageDialog(mainFrame,
-                    "❌ UNVERIFIED: No authentic certificate record found matching:\n\n'" + code.trim() + "'\n\n" +
-                    "Please verify the code and ensure it was registered and stored in SQLite.",
+                    "❌ UNVERIFIED: No authentic certificate record found matching:\n\n'" + code + "'\n\n" +
+                    "Please verify the code or ID and ensure it was registered in SQLite.",
                     "Certificate Not Found", JOptionPane.ERROR_MESSAGE);
         }
     }

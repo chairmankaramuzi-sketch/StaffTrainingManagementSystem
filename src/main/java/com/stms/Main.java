@@ -1,6 +1,9 @@
 package com.stms;
 
+import com.stms.model.User;
+import com.stms.service.AuthService;
 import com.stms.service.TrainingManagerService;
+import com.stms.ui.LoginDialog;
 import com.stms.ui.MainApplicationFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -24,13 +27,32 @@ public class Main {
 
         // Initialize business logic service
         TrainingManagerService service = new TrainingManagerService();
+        AuthService authService = new AuthService();
 
         // Launch GUI on the Event Dispatch Thread
-        SwingUtilities.invokeLater(() -> {
-            MainApplicationFrame frame = new MainApplicationFrame(service);
-            frame.setVisible(true);
-            System.out.println("Status: GUI Window launched successfully.");
-            System.out.println("Ready to run in Apache NetBeans IDE!");
-        });
+        SwingUtilities.invokeLater(() -> showLoginAndLaunch(service, authService));
+    }
+
+    /**
+     * Shows the login screen; on success opens the main window for that user.
+     * Closing the login screen without signing in exits the application.
+     */
+    private static void showLoginAndLaunch(TrainingManagerService service, AuthService authService) {
+        LoginDialog login = new LoginDialog(authService);
+        login.setVisible(true); // modal - blocks until closed
+
+        User user = login.getAuthenticatedUser();
+        if (user == null) {
+            System.out.println("Status: Login cancelled. Exiting.");
+            System.exit(0);
+            return;
+        }
+
+        System.out.println("Status: Logged in as " + user.getUsername() + " (" + user.getRole().getDisplayName() + ")");
+        MainApplicationFrame frame = new MainApplicationFrame(service, authService, user,
+                () -> showLoginAndLaunch(service, authService));
+        frame.setVisible(true);
+        System.out.println("Status: GUI Window launched successfully.");
     }
 }
+

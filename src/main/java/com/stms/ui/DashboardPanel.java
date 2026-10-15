@@ -104,8 +104,12 @@ public class DashboardPanel extends JPanel {
         btnGoReports.addActionListener(e -> mainFrame.switchToTab(6)); // tab 6: Reports
 
         actionsBar.add(btnRefresh);
-        actionsBar.add(btnClearLogs);
-        actionsBar.add(btnGoEnroll);
+        if (mainFrame.isAdmin()) {
+            actionsBar.add(btnClearLogs);
+        }
+        if (mainFrame.isTrainerOrAdmin()) {
+            actionsBar.add(btnGoEnroll);
+        }
         actionsBar.add(btnGoReports);
 
         logsPanel.add(actionsBar, BorderLayout.SOUTH);

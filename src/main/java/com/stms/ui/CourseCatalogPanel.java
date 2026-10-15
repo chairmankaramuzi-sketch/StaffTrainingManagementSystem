@@ -99,10 +99,13 @@ public class CourseCatalogPanel extends JPanel {
         JButton btnDelete = UITheme.createButton("🗑️ Delete", UITheme.DANGER, UITheme.TEXT_LIGHT);
         btnDelete.addActionListener(e -> deleteSelectedCourse());
 
-        actionPanel.add(btnAdd);
-        actionPanel.add(btnEdit);
-        actionPanel.add(btnArchive);
-        actionPanel.add(btnDelete);
+        // Course catalog changes are restricted to HR Administrators
+        if (mainFrame.isAdmin()) {
+            actionPanel.add(btnAdd);
+            actionPanel.add(btnEdit);
+            actionPanel.add(btnArchive);
+            actionPanel.add(btnDelete);
+        }
 
         topBar.add(filterPanel, BorderLayout.WEST);
         topBar.add(actionPanel, BorderLayout.EAST);
