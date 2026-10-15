@@ -1,5 +1,6 @@
 package com.stms.ui;
 
+import com.stms.model.Certificate;
 import com.stms.model.Employee;
 import com.stms.service.TrainingManagerService;
 import com.stms.ui.components.UITheme;
@@ -9,6 +10,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -20,7 +22,9 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
 /**
- * Reporting & Official Transcripts Panel.
+ * Reporting, Transcripts & Certificate Verification Panel.
+ * Supports Official Transcript Generation, Department Analytics,
+ * Verification Code Authentication, and CSV/Text Exports.
  */
 public class ReportsPanel extends JPanel {
     private final TrainingManagerService service;
@@ -62,13 +66,21 @@ public class ReportsPanel extends JPanel {
         leftPanel.add(cbEmployees);
         leftPanel.add(btnDeptSummary);
 
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         rightPanel.setOpaque(false);
 
-        JButton btnExport = UITheme.createButton("💾 Export to File", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
-        btnExport.addActionListener(e -> exportReportToFile());
+        JButton btnVerify = UITheme.createButton("🔍 Verify Certificate", UITheme.SUCCESS, UITheme.TEXT_LIGHT);
+        btnVerify.addActionListener(e -> showVerifyCertificateDialog());
 
-        rightPanel.add(btnExport);
+        JButton btnExportCsv = UITheme.createButton("📊 Export CSV", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
+        btnExportCsv.addActionListener(e -> exportCsvDialog());
+
+        JButton btnExportTxt = UITheme.createButton("💾 Export Text", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
+        btnExportTxt.addActionListener(e -> exportReportToFile());
+
+        rightPanel.add(btnVerify);
+        rightPanel.add(btnExportCsv);
+        rightPanel.add(btnExportTxt);
 
         topBar.add(leftPanel, BorderLayout.WEST);
         topBar.add(rightPanel, BorderLayout.EAST);
@@ -122,9 +134,89 @@ public class ReportsPanel extends JPanel {
         txtReportArea.setCaretPosition(0);
     }
 
+    private void showVerifyCertificateDialog() {
+        String code = JOptionPane.showInputDialog(mainFrame,
+                "Enter Certificate Verification Code (e.g., VER-JAVA-901):\n\n" +
+                "Tip: You can find verification codes on issued transcripts or the certificate database.",
+                "Verify Certificate Authenticity", JOptionPane.QUESTION_MESSAGE);
+
+        if (code == null || code.trim().isEmpty()) {
+            return;
+        }
+
+        Optional<Certificate> optCert = service.verifyCertificate(code.trim());
+        if (optCert.isPresent()) {
+            Certificate cert = optCert.get();
+            String details = String.format(
+                    "🎓 CERTIFICATE VERIFIED AUTHENTIC & GENUINE\n\n" +
+                    "Certificate ID      : %s\n" +
+                    "Verification Code   : %s\n" +
+                    "Recipient           : %s [%s]\n" +
+                    "Course Name         : %s\n" +
+                    "Category            : %s\n" +
+                    "Date Issued         : %s\n" +
+                    "Expiry Date         : %s\n" +
+                    "Current Status      : %s\n\n" +
+                    "Official record stored in SQLite JDBC Database (data/stms.db).",
+                    cert.getId(), cert.getVerificationCode(),
+                    cert.getEmployeeName(), cert.getEmployeeId(),
+                    cert.getCourseTitle(), cert.getCourseCategory(),
+                    cert.getIssueDate(),
+                    cert.getExpiryDate() != null ? cert.getExpiryDate() : "Permanent / No Expiry",
+                    cert.getValidityStatus()
+            );
+            JOptionPane.showMessageDialog(mainFrame, details, "Certificate Verification Result", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(mainFrame,
+                    "❌ UNVERIFIED: No authentic certificate record found matching:\n\n'" + code.trim() + "'\n\n" +
+                    "Please verify the code and ensure it was registered and stored in SQLite.",
+                    "Certificate Not Found", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void exportCsvDialog() {
+        String[] options = {"Selected Staff Transcript (CSV)", "Full Department Summary (CSV)"};
+        int choice = JOptionPane.showOptionDialog(mainFrame,
+                "Select CSV Export Format:", "Export CSV Data",
+                JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+
+        if (choice == 0) {
+            Employee selected = (Employee) cbEmployees.getSelectedItem();
+            if (selected == null) {
+                JOptionPane.showMessageDialog(mainFrame, "No staff member selected.", "Export Warning", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            JFileChooser chooser = new JFileChooser();
+            chooser.setSelectedFile(new File(selected.getId() + "_training_transcript.csv"));
+            if (chooser.showSaveDialog(mainFrame) == JFileChooser.APPROVE_OPTION) {
+                try {
+                    service.exportTranscriptToCsv(selected.getId(), chooser.getSelectedFile());
+                    JOptionPane.showMessageDialog(mainFrame,
+                            "Transcript exported to CSV:\n" + chooser.getSelectedFile().getAbsolutePath(),
+                            "Export Successful", JOptionPane.INFORMATION_MESSAGE);
+                } catch (IOException ex) {
+                    JOptionPane.showMessageDialog(mainFrame, "Error exporting CSV: " + ex.getMessage(), "Export Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        } else if (choice == 1) {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setSelectedFile(new File("department_training_summary.csv"));
+            if (chooser.showSaveDialog(mainFrame) == JFileChooser.APPROVE_OPTION) {
+                try {
+                    service.exportDepartmentSummaryToCsv(chooser.getSelectedFile());
+                    JOptionPane.showMessageDialog(mainFrame,
+                            "Department summary exported to CSV:\n" + chooser.getSelectedFile().getAbsolutePath(),
+                            "Export Successful", JOptionPane.INFORMATION_MESSAGE);
+                } catch (IOException ex) {
+                    JOptionPane.showMessageDialog(mainFrame, "Error exporting CSV: " + ex.getMessage(), "Export Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }
+    }
+
     private void exportReportToFile() {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Save Training Report");
+        fileChooser.setDialogTitle("Save Training Report as Text");
         fileChooser.setSelectedFile(new File("staff_training_transcript.txt"));
 
         int userSelection = fileChooser.showSaveDialog(mainFrame);
@@ -132,7 +224,9 @@ public class ReportsPanel extends JPanel {
             File fileToSave = fileChooser.getSelectedFile();
             try (FileWriter fw = new FileWriter(fileToSave)) {
                 fw.write(txtReportArea.getText());
-                JOptionPane.showMessageDialog(mainFrame, "Report successfully exported to:\n" + fileToSave.getAbsolutePath(), "Export Complete", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(mainFrame,
+                        "Report successfully exported to:\n" + fileToSave.getAbsolutePath(),
+                        "Export Complete", JOptionPane.INFORMATION_MESSAGE);
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(mainFrame, "Error exporting file: " + ex.getMessage(), "Export Error", JOptionPane.ERROR_MESSAGE);
             }

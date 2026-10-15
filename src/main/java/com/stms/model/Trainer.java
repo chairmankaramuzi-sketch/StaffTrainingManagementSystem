@@ -11,6 +11,7 @@ public class Trainer extends Person {
     private int yearsOfExperience;
     private double hourlyRate;
     private boolean external;
+    private boolean active;
 
     public Trainer() {
         super();
@@ -18,6 +19,7 @@ public class Trainer extends Person {
         this.yearsOfExperience = 3;
         this.hourlyRate = 50.0;
         this.external = false;
+        this.active = true;
     }
 
     public Trainer(String id, String firstName, String lastName, String email, String phone,
@@ -27,6 +29,7 @@ public class Trainer extends Person {
         setYearsOfExperience(yearsOfExperience);
         setHourlyRate(hourlyRate);
         this.external = external;
+        this.active = true;
     }
 
     @Override
@@ -64,6 +67,14 @@ public class Trainer extends Person {
 
     public void setExternal(boolean external) {
         this.external = external;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
     @Override

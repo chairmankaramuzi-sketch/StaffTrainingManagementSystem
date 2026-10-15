@@ -36,6 +36,7 @@ public class StaffTrainingManagementSystem extends JFrame {
 
     // Table Models for Real-Time UI Updating
     private DefaultTableModel staffTableModel;
+    private DefaultTableModel trainerTableModel;
     private DefaultTableModel courseTableModel;
     private DefaultTableModel sessionTableModel;
     private DefaultTableModel enrollmentTableModel;
@@ -123,6 +124,7 @@ public class StaffTrainingManagementSystem extends JFrame {
 
         tabbedPane.addTab("📊 Dashboard", createDashboardPanel());
         tabbedPane.addTab("👥 Staff Directory", createStaffPanel());
+        tabbedPane.addTab("👨‍🏫 Trainers", createTrainerPanel());
         tabbedPane.addTab("📚 Course Catalog", createCoursePanel());
         tabbedPane.addTab("📅 Training Sessions", createSessionPanel());
         tabbedPane.addTab("📝 Enroll & Grade", createEnrollmentPanel());
@@ -363,6 +365,141 @@ public class StaffTrainingManagementSystem extends JFrame {
         dlg.setVisible(true);
     }
 
+    // --- TAB: TRAINER MANAGEMENT ---
+    private JPanel createTrainerPanel() {
+        JPanel panel = new JPanel(new BorderLayout(12, 12));
+        panel.setBackground(new Color(0xF8, 0xFA, 0xFC));
+        panel.setBorder(new EmptyBorder(16, 20, 16, 20));
+
+        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        toolbar.setOpaque(false);
+
+        JTextField txtSearch = new JTextField(16);
+        txtSearch.setToolTipText("Search trainer by Name or Specialization");
+
+        JButton btnSearch = new JButton("🔍 Search");
+        stylePrimaryButton(btnSearch, new Color(0x25, 0x63, 0xEB), Color.WHITE);
+        btnSearch.addActionListener(e -> filterTrainerTable(txtSearch.getText().trim()));
+
+        JButton btnReset = new JButton("Reset");
+        styleSecondaryButton(btnReset);
+        btnReset.addActionListener(e -> {
+            txtSearch.setText("");
+            loadTrainerTable();
+        });
+
+        JButton btnAddTrainer = new JButton("➕ Add New Trainer");
+        stylePrimaryButton(btnAddTrainer, new Color(0x05, 0x96, 0x69), Color.WHITE);
+        btnAddTrainer.addActionListener(e -> showAddTrainerDialog());
+
+        JButton btnDeleteTrainer = new JButton("🗑️ Delete Selected");
+        stylePrimaryButton(btnDeleteTrainer, new Color(0xDC, 0x26, 0x26), Color.WHITE);
+
+        toolbar.add(new JLabel("Search Trainers:"));
+        toolbar.add(txtSearch);
+        toolbar.add(btnSearch);
+        toolbar.add(btnReset);
+        toolbar.add(Box.createHorizontalStrut(20));
+        toolbar.add(btnAddTrainer);
+        toolbar.add(btnDeleteTrainer);
+
+        // Table
+        String[] columns = {"Trainer ID", "Full Name", "Specialization", "Experience", "Hourly Rate", "Type", "Email", "Phone"};
+        trainerTableModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+
+        JTable table = new JTable(trainerTableModel);
+        styleTable(table);
+
+        btnDeleteTrainer.addActionListener(e -> {
+            int selectedRow = table.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(this, "Please select a trainer to delete.", "Notice", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String id = (String) trainerTableModel.getValueAt(selectedRow, 0);
+            int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete trainer " + id + "?",
+                    "Confirm Deletion", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                service.deleteTrainer(id);
+                refreshAllData();
+            }
+        });
+
+        panel.add(toolbar, BorderLayout.NORTH);
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        return panel;
+    }
+
+    private void showAddTrainerDialog() {
+        JDialog dlg = new JDialog(this, "Register New Trainer", true);
+        dlg.setSize(440, 420);
+        dlg.setLocationRelativeTo(this);
+        dlg.setLayout(new GridBagLayout());
+        GridBagConstraints g = new GridBagConstraints();
+        g.insets = new Insets(6, 12, 6, 12);
+        g.fill = GridBagConstraints.HORIZONTAL;
+
+        JTextField txtFn = new JTextField(15);
+        JTextField txtLn = new JTextField(15);
+        JTextField txtEmail = new JTextField(15);
+        JTextField txtPhone = new JTextField(15);
+        JTextField txtSpec = new JTextField(15);
+        JTextField txtExp = new JTextField(5);
+        txtExp.setText("5");
+        JTextField txtRate = new JTextField(5);
+        txtRate.setText("95.0");
+        JCheckBox chkExternal = new JCheckBox("External Contractor", true);
+
+        g.gridx = 0; g.gridy = 0; dlg.add(new JLabel("First Name:"), g);
+        g.gridx = 1; dlg.add(txtFn, g);
+        g.gridx = 0; g.gridy = 1; dlg.add(new JLabel("Last Name:"), g);
+        g.gridx = 1; dlg.add(txtLn, g);
+        g.gridx = 0; g.gridy = 2; dlg.add(new JLabel("Email Address:"), g);
+        g.gridx = 1; dlg.add(txtEmail, g);
+        g.gridx = 0; g.gridy = 3; dlg.add(new JLabel("Phone:"), g);
+        g.gridx = 1; dlg.add(txtPhone, g);
+        g.gridx = 0; g.gridy = 4; dlg.add(new JLabel("Specialization:"), g);
+        g.gridx = 1; dlg.add(txtSpec, g);
+        g.gridx = 0; g.gridy = 5; dlg.add(new JLabel("Experience (Years):"), g);
+        g.gridx = 1; dlg.add(txtExp, g);
+        g.gridx = 0; g.gridy = 6; dlg.add(new JLabel("Hourly Rate ($):"), g);
+        g.gridx = 1; dlg.add(txtRate, g);
+        g.gridx = 1; g.gridy = 7; dlg.add(chkExternal, g);
+
+        JButton btnSave = new JButton("💾 Save Trainer");
+        stylePrimaryButton(btnSave, new Color(0x05, 0x96, 0x69), Color.WHITE);
+        btnSave.addActionListener(e -> {
+            String fn = txtFn.getText().trim();
+            String ln = txtLn.getText().trim();
+            String email = txtEmail.getText().trim();
+            String spec = txtSpec.getText().trim();
+            if (fn.isEmpty() || ln.isEmpty() || email.isEmpty() || spec.isEmpty()) {
+                JOptionPane.showMessageDialog(dlg, "Please fill in all required fields.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            try {
+                int exp = Integer.parseInt(txtExp.getText().trim());
+                double rate = Double.parseDouble(txtRate.getText().trim());
+                Trainer t = new Trainer("TRN-" + (service.getAllTrainers().size() + 201),
+                        fn, ln, email, txtPhone.getText().trim(), spec, exp, rate, chkExternal.isSelected());
+                service.registerTrainer(t);
+                dlg.dispose();
+                refreshAllData();
+                JOptionPane.showMessageDialog(this, "New trainer registered successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dlg, "Invalid number format: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        g.gridx = 0; g.gridy = 8; g.gridwidth = 2;
+        g.insets = new Insets(16, 12, 8, 12);
+        dlg.add(btnSave, g);
+        dlg.setVisible(true);
+    }
+
     // --- TAB 3: COURSE CATALOG ---
     private JPanel createCoursePanel() {
         JPanel panel = new JPanel(new BorderLayout(12, 12));
@@ -598,6 +735,7 @@ public class StaffTrainingManagementSystem extends JFrame {
     // --- LIVE REFRESH DATA & METRICS ---
     private void refreshAllData() {
         loadStaffTable();
+        loadTrainerTable();
         loadCourseTable();
         loadSessionTable();
         loadEnrollmentTable();
@@ -629,8 +767,8 @@ public class StaffTrainingManagementSystem extends JFrame {
             cbTranscriptStaff.addItem(emp.getFullName() + " [" + emp.getId() + "]");
         }
 
-        lblStatus.setText(String.format("🟢 Active JDBC Storage (data/stms.db) | Staff: %d | Courses: %d | Sessions: %d | Certificates: %d",
-                service.getAllEmployees().size(), service.getAllCourses().size(),
+        lblStatus.setText(String.format("🟢 Active JDBC Storage (data/stms.db) | Staff: %d | Trainers: %d | Courses: %d | Sessions: %d | Certificates: %d",
+                service.getAllEmployees().size(), service.getAllTrainers().size(), service.getAllCourses().size(),
                 service.getAllSessions().size(), service.getAllCertificates().size()));
     }
 
@@ -641,6 +779,30 @@ public class StaffTrainingManagementSystem extends JFrame {
                     e.getId(), e.getFullName(), e.getEmail(),
                     e.getDepartment().name(), e.getJobTitle(),
                     e.getHireDate().toString(), (e.isActive() ? "Active" : "Inactive")
+            });
+        }
+    }
+
+    private void loadTrainerTable() {
+        if (trainerTableModel == null) return;
+        trainerTableModel.setRowCount(0);
+        for (Trainer t : service.getAllTrainers()) {
+            trainerTableModel.addRow(new Object[]{
+                    t.getId(), t.getFullName(), t.getSpecialization(),
+                    t.getYearsExperience() + " yrs", String.format("$%.2f/hr", t.getHourlyRate()),
+                    (t.isExternal() ? "Contractor" : "Internal"), t.getEmail(), t.getPhone()
+            });
+        }
+    }
+
+    private void filterTrainerTable(String query) {
+        if (trainerTableModel == null) return;
+        trainerTableModel.setRowCount(0);
+        for (Trainer t : service.searchTrainers(query)) {
+            trainerTableModel.addRow(new Object[]{
+                    t.getId(), t.getFullName(), t.getSpecialization(),
+                    t.getYearsExperience() + " yrs", String.format("$%.2f/hr", t.getHourlyRate()),
+                    (t.isExternal() ? "Contractor" : "Internal"), t.getEmail(), t.getPhone()
             });
         }
     }
@@ -891,6 +1053,9 @@ public class StaffTrainingManagementSystem extends JFrame {
         }
 
         public String getSpecialization() { return specialization; }
+        public int getYearsExperience() { return yearsExperience; }
+        public double getHourlyRate() { return hourlyRate; }
+        public boolean isExternal() { return isExternal; }
     }
 
     // --- BASE ABSTRACT CLASS: TRAINING COURSE (POLYMORPHISM) ---
@@ -1195,6 +1360,34 @@ public class StaffTrainingManagementSystem extends JFrame {
                     e.getJobTitle().toLowerCase().contains(lower) ||
                     e.getDepartment().name().toLowerCase().contains(lower)) {
                     list.add(e);
+                }
+            }
+            return list;
+        }
+
+        public List<Trainer> getAllTrainers() { return new ArrayList<>(trainers.values()); }
+
+        public void registerTrainer(Trainer t) {
+            trainers.put(t.getId(), t);
+            logEvent("Registered new trainer: " + t.getFullName() + " [" + t.getId() + "]");
+        }
+
+        public void deleteTrainer(String id) {
+            Trainer removed = trainers.remove(id);
+            if (removed != null) {
+                logEvent("Deleted trainer: " + removed.getFullName() + " [" + id + "]");
+            }
+        }
+
+        public List<Trainer> searchTrainers(String q) {
+            if (q == null || q.trim().isEmpty()) return getAllTrainers();
+            String lower = q.toLowerCase();
+            List<Trainer> list = new ArrayList<>();
+            for (Trainer t : trainers.values()) {
+                if (t.getFullName().toLowerCase().contains(lower) ||
+                    t.getId().toLowerCase().contains(lower) ||
+                    t.getSpecialization().toLowerCase().contains(lower)) {
+                    list.add(t);
                 }
             }
             return list;

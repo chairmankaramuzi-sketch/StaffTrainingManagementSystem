@@ -26,6 +26,7 @@ import javax.swing.table.DefaultTableModel;
 
 /**
  * Session Scheduling & Management Panel.
+ * Supports Scheduling, Editing, Status Updates, Conflict Prevention, and Attendee Management.
  */
 public class SessionSchedulePanel extends JPanel {
     private final TrainingManagerService service;
@@ -33,6 +34,8 @@ public class SessionSchedulePanel extends JPanel {
 
     private JTable sessionTable;
     private DefaultTableModel tableModel;
+    private JTextField txtSearch;
+    private JComboBox<String> cbStatusFilter;
 
     public SessionSchedulePanel(TrainingManagerService service, MainApplicationFrame mainFrame) {
         this.service = service;
@@ -50,27 +53,53 @@ public class SessionSchedulePanel extends JPanel {
         JPanel topBar = new JPanel(new BorderLayout(10, 10));
         topBar.setOpaque(false);
 
-        JLabel lblTitle = new JLabel("📅 Active Training Schedules & Sessions");
-        lblTitle.setFont(UITheme.FONT_SUBTITLE);
-        lblTitle.setForeground(UITheme.TEXT_PRIMARY);
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        filterPanel.setOpaque(false);
 
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        JLabel lblSearch = new JLabel("🔍 Search:");
+        lblSearch.setFont(UITheme.FONT_BOLD);
+        txtSearch = UITheme.createTextField(12);
+        txtSearch.addActionListener(e -> loadSessionsTable());
+
+        JLabel lblFilter = new JLabel("Status:");
+        lblFilter.setFont(UITheme.FONT_BOLD);
+        cbStatusFilter = UITheme.createComboBox(new String[]{"All Statuses", "Scheduled", "In Progress", "Completed", "Cancelled"});
+        cbStatusFilter.addActionListener(e -> loadSessionsTable());
+
+        JButton btnFilter = UITheme.createButton("Filter", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
+        btnFilter.addActionListener(e -> loadSessionsTable());
+
+        filterPanel.add(lblSearch);
+        filterPanel.add(txtSearch);
+        filterPanel.add(lblFilter);
+        filterPanel.add(cbStatusFilter);
+        filterPanel.add(btnFilter);
+
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         actionPanel.setOpaque(false);
 
-        JButton btnSchedule = UITheme.createButton("➕ Schedule New Session", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
+        JButton btnSchedule = UITheme.createButton("➕ Schedule Session", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
         btnSchedule.addActionListener(e -> showScheduleDialog());
+
+        JButton btnEdit = UITheme.createButton("✏️ Edit Session", UITheme.PURPLE, UITheme.TEXT_LIGHT);
+        btnEdit.addActionListener(e -> showEditSessionDialog());
 
         JButton btnChangeStatus = UITheme.createButton("🔄 Update Status", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
         btnChangeStatus.addActionListener(e -> changeSessionStatus());
 
-        JButton btnAttendees = UITheme.createButton("👥 View Attendees", UITheme.PURPLE, UITheme.TEXT_LIGHT);
+        JButton btnAttendees = UITheme.createButton("👥 View Attendees", UITheme.SUCCESS, UITheme.TEXT_LIGHT);
         btnAttendees.addActionListener(e -> showAttendeesDialog());
 
+        JButton btnCancel = UITheme.createButton("❌ Cancel / Delete", UITheme.DANGER, UITheme.TEXT_LIGHT);
+        btnCancel.addActionListener(e -> cancelOrDeleteSession());
+
         actionPanel.add(btnSchedule);
+        actionPanel.add(btnEdit);
         actionPanel.add(btnChangeStatus);
         actionPanel.add(btnAttendees);
+        actionPanel.add(btnCancel);
 
-        topBar.add(lblTitle, BorderLayout.WEST);
+        topBar.add(filterPanel, BorderLayout.WEST);
         topBar.add(actionPanel, BorderLayout.EAST);
         add(topBar, BorderLayout.NORTH);
 
@@ -92,8 +121,27 @@ public class SessionSchedulePanel extends JPanel {
 
     public void loadSessionsTable() {
         tableModel.setRowCount(0);
+        String query = txtSearch.getText().trim().toLowerCase();
+        String statusFilter = (String) cbStatusFilter.getSelectedItem();
+
         List<TrainingSession> sessions = service.getAllSessions();
         for (TrainingSession s : sessions) {
+            if (statusFilter != null && !statusFilter.equals("All Statuses")) {
+                if (!s.getStatus().getLabel().equalsIgnoreCase(statusFilter) && !s.getStatus().name().equalsIgnoreCase(statusFilter)) {
+                    continue;
+                }
+            }
+
+            if (!query.isEmpty()) {
+                boolean matchId = s.getId().toLowerCase().contains(query);
+                boolean matchCourse = s.getCourseTitle().toLowerCase().contains(query);
+                boolean matchTrainer = s.getTrainerName().toLowerCase().contains(query);
+                boolean matchLoc = s.getLocationOrUrl().toLowerCase().contains(query);
+                if (!matchId && !matchCourse && !matchTrainer && !matchLoc) {
+                    continue;
+                }
+            }
+
             int enrolledCount = service.getEnrollmentsBySession(s.getId()).size();
             String seatText = enrolledCount + " / " + s.getMaxSeats();
 
@@ -114,21 +162,26 @@ public class SessionSchedulePanel extends JPanel {
         List<TrainingCourse> courses = service.getAllCourses();
         List<Trainer> trainers = service.getAllTrainers();
 
-        if (courses.isEmpty() || trainers.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "You need at least one course and one trainer to schedule a session.", "Prerequisite Missing", JOptionPane.WARNING_MESSAGE);
+        // Filter out inactive trainers
+        List<Trainer> activeTrainers = trainers.stream().filter(Trainer::isActive).toList();
+
+        if (courses.isEmpty() || activeTrainers.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "You need at least one active course and one active trainer to schedule a session.",
+                    "Prerequisite Missing", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         JDialog dialog = new JDialog(mainFrame, "Schedule Training Session", true);
         dialog.setLayout(new BorderLayout(16, 16));
-        dialog.setSize(480, 420);
+        dialog.setSize(500, 440);
         dialog.setLocationRelativeTo(mainFrame);
 
         JPanel form = new JPanel(new GridLayout(6, 2, 10, 12));
         form.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
 
         JComboBox<TrainingCourse> cbCourses = UITheme.createComboBox(courses.toArray(new TrainingCourse[0]));
-        JComboBox<Trainer> cbTrainers = UITheme.createComboBox(trainers.toArray(new Trainer[0]));
+        JComboBox<Trainer> cbTrainers = UITheme.createComboBox(activeTrainers.toArray(new Trainer[0]));
         JTextField tfDate = UITheme.createTextField(15);
         tfDate.setText(LocalDate.now().plusDays(7).toString());
         JTextField tfTime = UITheme.createTextField(15);
@@ -159,20 +212,133 @@ public class SessionSchedulePanel extends JPanel {
             try {
                 TrainingCourse selectedCourse = (TrainingCourse) cbCourses.getSelectedItem();
                 Trainer selectedTrainer = (Trainer) cbTrainers.getSelectedItem();
+                if (selectedCourse == null || selectedTrainer == null) return;
+
                 LocalDate date = LocalDate.parse(tfDate.getText().trim());
+                if (date.isBefore(LocalDate.now())) {
+                    JOptionPane.showMessageDialog(dialog, "Session date cannot be in the past.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
                 String time = tfTime.getText().trim();
                 String loc = tfLocation.getText().trim();
                 int seats = Integer.parseInt(tfSeats.getText().trim());
 
-                if (selectedCourse == null || selectedTrainer == null) return;
+                if (seats <= 0 || seats > selectedCourse.getMaxCapacity()) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Max seats must be between 1 and course limit (" + selectedCourse.getMaxCapacity() + ").",
+                            "Capacity Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
 
                 service.scheduleSession(selectedCourse.getId(), selectedTrainer.getId(), date, time, loc, seats);
+                JOptionPane.showMessageDialog(dialog, "Session successfully scheduled in SQLite!", "Success", JOptionPane.INFORMATION_MESSAGE);
 
                 dialog.dispose();
                 loadSessionsTable();
                 mainFrame.refreshAllViews();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage(), "Input Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "Scheduling prevented: " + ex.getMessage(), "Schedule Error / Conflict", JOptionPane.WARNING_MESSAGE);
+            }
+        });
+
+        btnCancel.addActionListener(e -> dialog.dispose());
+
+        btnPanel.add(btnCancel);
+        btnPanel.add(btnSave);
+
+        dialog.add(form, BorderLayout.CENTER);
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+        dialog.setVisible(true);
+    }
+
+    private void showEditSessionDialog() {
+        int selected = sessionTable.getSelectedRow();
+        if (selected == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a session to edit.", "Selection Required", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String sessionId = (String) tableModel.getValueAt(selected, 0);
+        TrainingSession session = service.findSessionById(sessionId).orElse(null);
+        if (session == null) {
+            JOptionPane.showMessageDialog(this, "Session not found: " + sessionId, "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        List<Trainer> activeTrainers = service.getAllTrainers().stream().filter(Trainer::isActive).toList();
+
+        JDialog dialog = new JDialog(mainFrame, "Edit Session [" + session.getId() + "]", true);
+        dialog.setLayout(new BorderLayout(16, 16));
+        dialog.setSize(500, 450);
+        dialog.setLocationRelativeTo(mainFrame);
+
+        JPanel form = new JPanel(new GridLayout(6, 2, 10, 12));
+        form.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
+
+        JComboBox<Trainer> cbTrainers = UITheme.createComboBox(activeTrainers.toArray(new Trainer[0]));
+        for (int i = 0; i < activeTrainers.size(); i++) {
+            if (activeTrainers.get(i).getId().equalsIgnoreCase(session.getTrainerId())) {
+                cbTrainers.setSelectedIndex(i);
+                break;
+            }
+        }
+
+        JTextField tfDate = UITheme.createTextField(15);
+        tfDate.setText(session.getSessionDate().toString());
+        JTextField tfTime = UITheme.createTextField(15);
+        tfTime.setText(session.getTimeSlot());
+        JTextField tfLocation = UITheme.createTextField(15);
+        tfLocation.setText(session.getLocationOrUrl());
+        JTextField tfSeats = UITheme.createTextField(15);
+        tfSeats.setText(String.valueOf(session.getMaxSeats()));
+        JComboBox<SessionStatus> cbStatus = UITheme.createComboBox(SessionStatus.values());
+        cbStatus.setSelectedItem(session.getStatus());
+
+        form.add(new JLabel("Assigned Trainer:"));
+        form.add(cbTrainers);
+        form.add(new JLabel("Session Date (YYYY-MM-DD):"));
+        form.add(tfDate);
+        form.add(new JLabel("Time Slot:"));
+        form.add(tfTime);
+        form.add(new JLabel("Location / URL:"));
+        form.add(tfLocation);
+        form.add(new JLabel("Max Seats Capacity:"));
+        form.add(tfSeats);
+        form.add(new JLabel("Session Status:"));
+        form.add(cbStatus);
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        JButton btnSave = UITheme.createButton("Save Changes", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
+        JButton btnCancel = UITheme.createButton("Cancel", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
+
+        btnSave.addActionListener(e -> {
+            try {
+                Trainer selectedTrainer = (Trainer) cbTrainers.getSelectedItem();
+                if (selectedTrainer == null) return;
+
+                LocalDate date = LocalDate.parse(tfDate.getText().trim());
+                String time = tfTime.getText().trim();
+                String loc = tfLocation.getText().trim();
+                int seats = Integer.parseInt(tfSeats.getText().trim());
+                SessionStatus status = (SessionStatus) cbStatus.getSelectedItem();
+
+                session.setTrainerId(selectedTrainer.getId());
+                session.setTrainerName(selectedTrainer.getFullName());
+                session.setSessionDate(date);
+                session.setTimeSlot(time);
+                session.setLocationOrUrl(loc);
+                session.setMaxSeats(seats);
+                session.setStatus(status);
+
+                service.updateSession(session);
+                JOptionPane.showMessageDialog(dialog, "Session updated successfully in SQLite!", "Success", JOptionPane.INFORMATION_MESSAGE);
+
+                dialog.dispose();
+                loadSessionsTable();
+                mainFrame.refreshAllViews();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialog, "Update error: " + ex.getMessage(), "Error / Conflict", JOptionPane.WARNING_MESSAGE);
             }
         });
 
@@ -207,6 +373,38 @@ public class SessionSchedulePanel extends JPanel {
         });
     }
 
+    private void cancelOrDeleteSession() {
+        int selected = sessionTable.getSelectedRow();
+        if (selected == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a session.", "Selection Required", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String id = (String) tableModel.getValueAt(selected, 0);
+        int enrolledCount = service.getEnrollmentsBySession(id).size();
+
+        if (enrolledCount > 0) {
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Session " + id + " has " + enrolledCount + " enrolled staff member(s).\n" +
+                    "To preserve historical training records, mark this session as 'CANCELLED' instead of deleting?",
+                    "Cancel Training Session", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                service.updateSessionStatus(id, SessionStatus.CANCELLED);
+                loadSessionsTable();
+                mainFrame.refreshAllViews();
+            }
+        } else {
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Permanently delete empty session " + id + "?",
+                    "Confirm Delete Session", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                service.deleteSession(id);
+                loadSessionsTable();
+                mainFrame.refreshAllViews();
+            }
+        }
+    }
+
     private void showAttendeesDialog() {
         int selected = sessionTable.getSelectedRow();
         if (selected == -1) {
@@ -218,7 +416,7 @@ public class SessionSchedulePanel extends JPanel {
 
         JDialog dialog = new JDialog(mainFrame, "Enrolled Attendees for Session: " + id, true);
         dialog.setLayout(new BorderLayout(10, 10));
-        dialog.setSize(520, 360);
+        dialog.setSize(540, 360);
         dialog.setLocationRelativeTo(mainFrame);
 
         String[] cols = {"Enrollment ID", "Staff Name", "Attended", "Score", "Status"};

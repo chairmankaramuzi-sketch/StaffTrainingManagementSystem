@@ -8,7 +8,8 @@ public enum EnrollmentStatus {
     ATTENDED("Attended"),
     PASSED("Passed & Certified"),
     FAILED("Needs Retake"),
-    DROPPED("Dropped");
+    DROPPED("Dropped"),
+    CANCELLED("Cancelled");
 
     private final String label;
 

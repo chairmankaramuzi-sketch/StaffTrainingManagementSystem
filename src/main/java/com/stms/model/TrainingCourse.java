@@ -21,6 +21,7 @@ public abstract class TrainingCourse implements Identifiable, Certifiable, Searc
     private CourseLevel level;
     private int maxCapacity;
     private double costPerSeat;
+    private boolean archived = false;
 
     public TrainingCourse() {
         this.level = CourseLevel.BEGINNER;
@@ -124,6 +125,14 @@ public abstract class TrainingCourse implements Identifiable, Certifiable, Searc
 
     public void setCostPerSeat(double costPerSeat) {
         this.costPerSeat = Math.max(0.0, costPerSeat);
+    }
+
+    public boolean isArchived() {
+        return archived;
+    }
+
+    public void setArchived(boolean archived) {
+        this.archived = archived;
     }
 
     @Override

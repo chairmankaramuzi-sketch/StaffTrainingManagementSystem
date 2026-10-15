@@ -25,7 +25,7 @@ import javax.swing.table.DefaultTableModel;
 
 /**
  * Staff (Employee) Management Panel.
- * Demonstrates CRUD operations, validation, and domain interaction.
+ * Demonstrates CRUD operations, status toggling, and SQLite persistence.
  */
 public class StaffManagementPanel extends JPanel {
     private final TrainingManagerService service;
@@ -35,6 +35,7 @@ public class StaffManagementPanel extends JPanel {
     private DefaultTableModel tableModel;
     private JTextField txtSearch;
     private JComboBox<String> cbDeptFilter;
+    private JComboBox<String> cbStatusFilter;
 
     public StaffManagementPanel(TrainingManagerService service, MainApplicationFrame mainFrame) {
         this.service = service;
@@ -58,7 +59,7 @@ public class StaffManagementPanel extends JPanel {
 
         JLabel lblSearch = new JLabel("🔍 Search:");
         lblSearch.setFont(UITheme.FONT_BOLD);
-        txtSearch = UITheme.createTextField(15);
+        txtSearch = UITheme.createTextField(14);
         txtSearch.addActionListener(e -> loadStaffTable());
 
         JLabel lblFilter = new JLabel("Department:");
@@ -72,13 +73,20 @@ public class StaffManagementPanel extends JPanel {
         cbDeptFilter = UITheme.createComboBox(depts);
         cbDeptFilter.addActionListener(e -> loadStaffTable());
 
-        JButton btnFilter = UITheme.createButton("Apply Filter", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
+        JLabel lblStatus = new JLabel("Status:");
+        lblStatus.setFont(UITheme.FONT_BOLD);
+        cbStatusFilter = UITheme.createComboBox(new String[]{"All Statuses", "Active Only", "Inactive Only"});
+        cbStatusFilter.addActionListener(e -> loadStaffTable());
+
+        JButton btnFilter = UITheme.createButton("Filter", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
         btnFilter.addActionListener(e -> loadStaffTable());
 
         filterPanel.add(lblSearch);
         filterPanel.add(txtSearch);
         filterPanel.add(lblFilter);
         filterPanel.add(cbDeptFilter);
+        filterPanel.add(lblStatus);
+        filterPanel.add(cbStatusFilter);
         filterPanel.add(btnFilter);
 
         // Buttons Panel on Right
@@ -91,14 +99,18 @@ public class StaffManagementPanel extends JPanel {
         JButton btnEdit = UITheme.createButton("✏️ Edit Selected", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
         btnEdit.addActionListener(e -> editSelectedStaff());
 
+        JButton btnToggle = UITheme.createButton("🔄 Toggle Status", UITheme.PURPLE, UITheme.TEXT_LIGHT);
+        btnToggle.addActionListener(e -> toggleActiveSelectedStaff());
+
         JButton btnDelete = UITheme.createButton("🗑️ Delete", UITheme.DANGER, UITheme.TEXT_LIGHT);
         btnDelete.addActionListener(e -> deleteSelectedStaff());
 
-        JButton btnTranscript = UITheme.createButton("📄 Transcript", UITheme.PURPLE, UITheme.TEXT_LIGHT);
+        JButton btnTranscript = UITheme.createButton("📄 Transcript", UITheme.SUCCESS, UITheme.TEXT_LIGHT);
         btnTranscript.addActionListener(e -> viewSelectedTranscript());
 
         actionPanel.add(btnAdd);
         actionPanel.add(btnEdit);
+        actionPanel.add(btnToggle);
         actionPanel.add(btnDelete);
         actionPanel.add(btnTranscript);
 
@@ -127,14 +139,24 @@ public class StaffManagementPanel extends JPanel {
         tableModel.setRowCount(0);
         String query = txtSearch.getText().trim();
         String deptFilter = (String) cbDeptFilter.getSelectedItem();
+        String statusFilter = (String) cbStatusFilter.getSelectedItem();
 
-        List<Employee> list = service.searchEmployees(query);
-        for (Employee e : list) {
-            if (deptFilter != null && !deptFilter.equals("All Departments")) {
-                if (!e.getDepartment().getDisplayName().equalsIgnoreCase(deptFilter)) {
-                    continue;
+        String deptParam = (deptFilter != null && !deptFilter.equals("All Departments")) ? null : "ALL";
+        if (deptFilter != null && !deptFilter.equals("All Departments")) {
+            for (Department d : Department.values()) {
+                if (d.getDisplayName().equalsIgnoreCase(deptFilter)) {
+                    deptParam = d.name();
+                    break;
                 }
             }
+        }
+
+        Boolean activeParam = null;
+        if ("Active Only".equals(statusFilter)) activeParam = Boolean.TRUE;
+        if ("Inactive Only".equals(statusFilter)) activeParam = Boolean.FALSE;
+
+        List<Employee> list = service.searchEmployees(query, deptParam, activeParam);
+        for (Employee e : list) {
             int enrCount = service.getEnrollmentsByEmployee(e.getId()).size();
             tableModel.addRow(new Object[]{
                     e.getId(),
@@ -243,6 +265,7 @@ public class StaffManagementPanel extends JPanel {
                 dialog.dispose();
                 loadStaffTable();
                 mainFrame.refreshAllViews();
+                JOptionPane.showMessageDialog(this, "Employee record saved successfully in SQLite!", "Success", JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage(), "Input Error", JOptionPane.ERROR_MESSAGE);
             }
@@ -268,6 +291,23 @@ public class StaffManagementPanel extends JPanel {
         service.findEmployeeById(id).ifPresent(this::showAddEditStaffDialog);
     }
 
+    private void toggleActiveSelectedStaff() {
+        int selected = staffTable.getSelectedRow();
+        if (selected == -1) {
+            JOptionPane.showMessageDialog(this, "Please select an employee to toggle status.", "Selection Required", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String id = (String) tableModel.getValueAt(selected, 0);
+        service.findEmployeeById(id).ifPresent(emp -> {
+            boolean newStatus = !emp.isActive();
+            service.setEmployeeActive(id, newStatus);
+            loadStaffTable();
+            mainFrame.refreshAllViews();
+            JOptionPane.showMessageDialog(this, "Staff " + emp.getFullName() + " status updated to " +
+                    (newStatus ? "Active" : "Inactive"), "Status Updated", JOptionPane.INFORMATION_MESSAGE);
+        });
+    }
+
     private void deleteSelectedStaff() {
         int selected = staffTable.getSelectedRow();
         if (selected == -1) {
@@ -282,9 +322,14 @@ public class StaffManagementPanel extends JPanel {
                 "Confirm Deletion", JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
-            service.deleteEmployee(id);
-            loadStaffTable();
-            mainFrame.refreshAllViews();
+            try {
+                service.deleteEmployee(id);
+                loadStaffTable();
+                mainFrame.refreshAllViews();
+                JOptionPane.showMessageDialog(this, "Employee record deleted.", "Deleted", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Deletion Blocked", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 

@@ -92,10 +92,10 @@ public class DashboardPanel extends JPanel {
         btnRefresh.addActionListener(e -> refreshData());
 
         JButton btnGoEnroll = UITheme.createButton("📝 Quick Enroll Staff", UITheme.SUCCESS, UITheme.TEXT_LIGHT);
-        btnGoEnroll.addActionListener(e -> mainFrame.switchToTab(4)); // tab 4: Enrollments
+        btnGoEnroll.addActionListener(e -> mainFrame.switchToTab(5)); // tab 5: Enrollments
 
         JButton btnGoReports = UITheme.createButton("📄 View Transcripts", UITheme.PURPLE, UITheme.TEXT_LIGHT);
-        btnGoReports.addActionListener(e -> mainFrame.switchToTab(5)); // tab 5: Reports
+        btnGoReports.addActionListener(e -> mainFrame.switchToTab(6)); // tab 6: Reports
 
         actionsBar.add(btnRefresh);
         actionsBar.add(btnGoEnroll);
@@ -114,7 +114,10 @@ public class DashboardPanel extends JPanel {
         cardPassRate.setValue(String.format("%.1f%%", service.calculateOverallPassRate()));
         cardCertificates.setValue(String.valueOf(service.getTotalCertificatesCount()));
 
-        List<String> logs = service.getNotificationService().getRecentLogs(30);
+        List<String> logs = service.getRecentAuditLogs(30);
+        if (logs == null || logs.isEmpty()) {
+            logs = service.getNotificationService().getRecentLogs(30);
+        }
         StringBuilder sb = new StringBuilder();
         for (String log : logs) {
             sb.append(log).append("\n");

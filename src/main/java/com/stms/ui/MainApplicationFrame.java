@@ -23,6 +23,7 @@ public class MainApplicationFrame extends JFrame {
     private JTabbedPane tabbedPane;
     private DashboardPanel dashboardPanel;
     private StaffManagementPanel staffPanel;
+    private TrainerManagementPanel trainerPanel;
     private CourseCatalogPanel coursePanel;
     private SessionSchedulePanel sessionPanel;
     private EnrollmentGradingPanel enrollmentPanel;
@@ -104,6 +105,7 @@ public class MainApplicationFrame extends JFrame {
 
         dashboardPanel = new DashboardPanel(service, this);
         staffPanel = new StaffManagementPanel(service, this);
+        trainerPanel = new TrainerManagementPanel(service, this);
         coursePanel = new CourseCatalogPanel(service, this);
         sessionPanel = new SessionSchedulePanel(service, this);
         enrollmentPanel = new EnrollmentGradingPanel(service, this);
@@ -111,6 +113,7 @@ public class MainApplicationFrame extends JFrame {
 
         tabbedPane.addTab("📊 Dashboard", dashboardPanel);
         tabbedPane.addTab("👥 Staff Directory", staffPanel);
+        tabbedPane.addTab("👨‍🏫 Trainers", trainerPanel);
         tabbedPane.addTab("📚 Course Catalog", coursePanel);
         tabbedPane.addTab("📅 Training Sessions", sessionPanel);
         tabbedPane.addTab("📝 Enroll & Grade", enrollmentPanel);
@@ -143,9 +146,9 @@ public class MainApplicationFrame extends JFrame {
     }
 
     public void updateStatusBar() {
-        lblStatus.setText(String.format("🟢 Storage: JDBC SQLite Active (data/stms.db) | Staff: %d | Courses: %d | Sessions: %d | Certificates: %d",
-                service.getTotalStaffCount(), service.getTotalCoursesCount(),
-                service.getTotalSessionsCount(), service.getTotalCertificatesCount()));
+        lblStatus.setText(String.format("🟢 Storage: JDBC SQLite Active (data/stms.db) | Staff: %d | Trainers: %d | Courses: %d | Sessions: %d | Certificates: %d",
+                service.getTotalStaffCount(), service.getAllTrainers().size(),
+                service.getTotalCoursesCount(), service.getTotalSessionsCount(), service.getTotalCertificatesCount()));
     }
 
     public void switchToTab(int index) {
@@ -157,12 +160,13 @@ public class MainApplicationFrame extends JFrame {
     public void showEmployeeTranscript(String employeeId) {
         reportsPanel.selectEmployee(employeeId);
         reportsPanel.generateSelectedTranscript();
-        switchToTab(5); // Go to Reports tab
+        switchToTab(6); // Go to Reports tab (index 6)
     }
 
     public void refreshAllViews() {
         dashboardPanel.refreshData();
         staffPanel.loadStaffTable();
+        trainerPanel.loadTrainersTable();
         coursePanel.loadCoursesTable();
         sessionPanel.loadSessionsTable();
         enrollmentPanel.loadEnrollmentsTable();
