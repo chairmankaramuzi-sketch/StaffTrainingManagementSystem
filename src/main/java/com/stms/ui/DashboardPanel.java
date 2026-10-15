@@ -91,6 +91,12 @@ public class DashboardPanel extends JPanel {
         JButton btnRefresh = UITheme.createButton("🔄 Refresh Dashboard", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
         btnRefresh.addActionListener(e -> refreshData());
 
+        JButton btnClearLogs = UITheme.createButton("🧹 Clear Stream", UITheme.SECONDARY, UITheme.TEXT_PRIMARY);
+        btnClearLogs.addActionListener(e -> {
+            service.clearAuditLogs();
+            refreshData();
+        });
+
         JButton btnGoEnroll = UITheme.createButton("📝 Quick Enroll Staff", UITheme.SUCCESS, UITheme.TEXT_LIGHT);
         btnGoEnroll.addActionListener(e -> mainFrame.switchToTab(5)); // tab 5: Enrollments
 
@@ -98,6 +104,7 @@ public class DashboardPanel extends JPanel {
         btnGoReports.addActionListener(e -> mainFrame.switchToTab(6)); // tab 6: Reports
 
         actionsBar.add(btnRefresh);
+        actionsBar.add(btnClearLogs);
         actionsBar.add(btnGoEnroll);
         actionsBar.add(btnGoReports);
 

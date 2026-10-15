@@ -91,6 +91,12 @@ public class TrainingManagerService {
         return auditLogDAO.getRecentLogs(50);
     }
 
+    public void clearAuditLogs() {
+        auditLogDAO.clear();
+        notificationService.clear();
+        logEvent("Audit trail initialized. Ready for user operations.");
+    }
+
     // =========================================================================
     // STAFF (EMPLOYEE) OPERATIONS
     // =========================================================================

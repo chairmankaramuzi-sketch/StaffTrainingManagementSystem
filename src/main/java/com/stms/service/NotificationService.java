@@ -26,4 +26,8 @@ public class NotificationService {
             return new ArrayList<>(auditLogs.subList(from, size));
         }
     }
+
+    public void clear() {
+        auditLogs.clear();
+    }
 }
