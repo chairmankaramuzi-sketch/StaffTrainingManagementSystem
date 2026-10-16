@@ -349,7 +349,11 @@ public class StaffTrainingManagementSystem extends JFrame {
                 JOptionPane.showMessageDialog(dlg, "Please provide a valid email format.", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            Employee emp = new Employee("EMP-" + (service.getAllEmployees().size() + 101),
+            int nextNum = service.getAllEmployees().size() + 101;
+            while (service.findEmployeeById("EMP-" + nextNum).isPresent()) {
+                nextNum++;
+            }
+            Employee emp = new Employee("EMP-" + nextNum,
                     fn, ln, email, txtPhone.getText().trim(), (Department) cbDept.getSelectedItem(),
                     title, LocalDate.now());
             service.registerEmployee(emp);

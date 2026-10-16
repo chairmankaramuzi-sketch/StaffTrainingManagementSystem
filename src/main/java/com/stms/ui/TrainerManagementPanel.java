@@ -49,9 +49,34 @@ public class TrainerManagementPanel extends JPanel {
 
     private void initComponents() {
         // TOP: Filter Toolbar
-        JPanel topBar = new JPanel(new BorderLayout(10, 10));
+        JPanel topBar = new JPanel(new BorderLayout(0, 10));
         topBar.setOpaque(false);
 
+        // Row 1: Action Buttons
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        actionPanel.setOpaque(false);
+
+        JButton btnAdd = UITheme.createButton("➕ Add Trainer", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
+        btnAdd.addActionListener(e -> showAddEditTrainerDialog(null));
+
+        JButton btnEdit = UITheme.createButton("✏️ Edit Selected", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
+        btnEdit.addActionListener(e -> editSelectedTrainer());
+
+        JButton btnToggle = UITheme.createButton("🔄 Toggle Status", UITheme.PURPLE, UITheme.TEXT_LIGHT);
+        btnToggle.addActionListener(e -> toggleActiveSelectedTrainer());
+
+        JButton btnDelete = UITheme.createButton("🗑️ Delete", UITheme.DANGER, UITheme.TEXT_LIGHT);
+        btnDelete.addActionListener(e -> deleteSelectedTrainer());
+
+        // Trainer records can only be changed by HR Administrators
+        if (mainFrame.isAdmin()) {
+            actionPanel.add(btnAdd);
+            actionPanel.add(btnEdit);
+            actionPanel.add(btnToggle);
+            actionPanel.add(btnDelete);
+        }
+
+        // Row 2: Search & Filter Toolbar
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         filterPanel.setOpaque(false);
 
@@ -81,32 +106,12 @@ public class TrainerManagementPanel extends JPanel {
         filterPanel.add(btnFilter);
         filterPanel.add(btnReset);
 
-        // Buttons Panel on Right
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        actionPanel.setOpaque(false);
-
-        JButton btnAdd = UITheme.createButton("➕ Add Trainer", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
-        btnAdd.addActionListener(e -> showAddEditTrainerDialog(null));
-
-        JButton btnEdit = UITheme.createButton("✏️ Edit Selected", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
-        btnEdit.addActionListener(e -> editSelectedTrainer());
-
-        JButton btnToggle = UITheme.createButton("🔄 Toggle Status", UITheme.PURPLE, UITheme.TEXT_LIGHT);
-        btnToggle.addActionListener(e -> toggleActiveSelectedTrainer());
-
-        JButton btnDelete = UITheme.createButton("🗑️ Delete", UITheme.DANGER, UITheme.TEXT_LIGHT);
-        btnDelete.addActionListener(e -> deleteSelectedTrainer());
-
-        // Trainer records can only be changed by HR Administrators
         if (mainFrame.isAdmin()) {
-            actionPanel.add(btnAdd);
-            actionPanel.add(btnEdit);
-            actionPanel.add(btnToggle);
-            actionPanel.add(btnDelete);
+            topBar.add(actionPanel, BorderLayout.NORTH);
+            topBar.add(filterPanel, BorderLayout.SOUTH);
+        } else {
+            topBar.add(filterPanel, BorderLayout.CENTER);
         }
-
-        topBar.add(filterPanel, BorderLayout.WEST);
-        topBar.add(actionPanel, BorderLayout.EAST);
         add(topBar, BorderLayout.NORTH);
 
         // Center Table

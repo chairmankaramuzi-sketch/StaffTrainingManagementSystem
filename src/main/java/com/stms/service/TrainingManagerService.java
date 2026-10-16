@@ -102,7 +102,11 @@ public class TrainingManagerService {
     // =========================================================================
 
     public String getNextEmployeeId() {
-        return "EMP-" + (employeeDAO.count() + 101);
+        int nextNum = employeeDAO.count() + 101;
+        while (employeeDAO.findById("EMP-" + nextNum).isPresent()) {
+            nextNum++;
+        }
+        return "EMP-" + nextNum;
     }
 
     public void registerEmployee(Employee employee) {

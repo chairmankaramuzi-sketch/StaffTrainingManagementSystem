@@ -50,32 +50,11 @@ public class SessionSchedulePanel extends JPanel {
     }
 
     private void initComponents() {
-        JPanel topBar = new JPanel(new BorderLayout(10, 10));
+        JPanel topBar = new JPanel(new BorderLayout(0, 10));
         topBar.setOpaque(false);
 
-        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        filterPanel.setOpaque(false);
-
-        JLabel lblSearch = new JLabel("🔍 Search:");
-        lblSearch.setFont(UITheme.FONT_BOLD);
-        txtSearch = UITheme.createTextField(12);
-        txtSearch.addActionListener(e -> loadSessionsTable());
-
-        JLabel lblFilter = new JLabel("Status:");
-        lblFilter.setFont(UITheme.FONT_BOLD);
-        cbStatusFilter = UITheme.createComboBox(new String[]{"All Statuses", "Scheduled", "In Progress", "Completed", "Cancelled"});
-        cbStatusFilter.addActionListener(e -> loadSessionsTable());
-
-        JButton btnFilter = UITheme.createButton("Filter", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
-        btnFilter.addActionListener(e -> loadSessionsTable());
-
-        filterPanel.add(lblSearch);
-        filterPanel.add(txtSearch);
-        filterPanel.add(lblFilter);
-        filterPanel.add(cbStatusFilter);
-        filterPanel.add(btnFilter);
-
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        // Row 1: Action Buttons
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         actionPanel.setOpaque(false);
 
         JButton btnSchedule = UITheme.createButton("➕ Schedule Session", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
@@ -87,6 +66,9 @@ public class SessionSchedulePanel extends JPanel {
         JButton btnChangeStatus = UITheme.createButton("🔄 Update Status", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
         btnChangeStatus.addActionListener(e -> changeSessionStatus());
 
+        JButton btnAddStaff = UITheme.createButton("➕ Add Staff to Session", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
+        btnAddStaff.addActionListener(e -> addStaffToSelectedSession());
+
         JButton btnAttendees = UITheme.createButton("👥 View Attendees", UITheme.SUCCESS, UITheme.TEXT_LIGHT);
         btnAttendees.addActionListener(e -> showAttendeesDialog());
 
@@ -97,14 +79,46 @@ public class SessionSchedulePanel extends JPanel {
             actionPanel.add(btnSchedule);
             actionPanel.add(btnEdit);
             actionPanel.add(btnChangeStatus);
+            actionPanel.add(btnAddStaff);
         }
         actionPanel.add(btnAttendees);
         if (mainFrame.isAdmin()) {
             actionPanel.add(btnCancel);
         }
 
-        topBar.add(filterPanel, BorderLayout.WEST);
-        topBar.add(actionPanel, BorderLayout.EAST);
+        // Row 2: Search & Filter Toolbar
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        filterPanel.setOpaque(false);
+
+        JLabel lblSearch = new JLabel("🔍 Search:");
+        lblSearch.setFont(UITheme.FONT_BOLD);
+        txtSearch = UITheme.createTextField(14);
+        txtSearch.addActionListener(e -> loadSessionsTable());
+
+        JLabel lblFilter = new JLabel("Status:");
+        lblFilter.setFont(UITheme.FONT_BOLD);
+        cbStatusFilter = UITheme.createComboBox(new String[]{"All Statuses", "Scheduled", "In Progress", "Completed", "Cancelled"});
+        cbStatusFilter.addActionListener(e -> loadSessionsTable());
+
+        JButton btnFilter = UITheme.createButton("Filter", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
+        btnFilter.addActionListener(e -> loadSessionsTable());
+
+        JButton btnReset = UITheme.createButton("Reset", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
+        btnReset.addActionListener(e -> {
+            txtSearch.setText("");
+            cbStatusFilter.setSelectedIndex(0);
+            loadSessionsTable();
+        });
+
+        filterPanel.add(lblSearch);
+        filterPanel.add(txtSearch);
+        filterPanel.add(lblFilter);
+        filterPanel.add(cbStatusFilter);
+        filterPanel.add(btnFilter);
+        filterPanel.add(btnReset);
+
+        topBar.add(actionPanel, BorderLayout.NORTH);
+        topBar.add(filterPanel, BorderLayout.SOUTH);
         add(topBar, BorderLayout.NORTH);
 
         String[] columns = {"Session ID", "Course Title", "Instructor / Trainer", "Date", "Time", "Location / Link", "Seats (Booked / Max)", "Status"};
@@ -409,6 +423,16 @@ public class SessionSchedulePanel extends JPanel {
         }
     }
 
+    private void addStaffToSelectedSession() {
+        int selected = sessionTable.getSelectedRow();
+        if (selected == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a session first to add staff.", "Selection Required", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String id = (String) tableModel.getValueAt(selected, 0);
+        showQuickEnrollDialog(id, null);
+    }
+
     private void showAttendeesDialog() {
         int selected = sessionTable.getSelectedRow();
         if (selected == -1) {
@@ -420,7 +444,7 @@ public class SessionSchedulePanel extends JPanel {
 
         JDialog dialog = new JDialog(mainFrame, "Enrolled Attendees for Session: " + id, true);
         dialog.setLayout(new BorderLayout(10, 10));
-        dialog.setSize(540, 360);
+        dialog.setSize(580, 400);
         dialog.setLocationRelativeTo(mainFrame);
 
         String[] cols = {"Enrollment ID", "Staff Name", "Attended", "Score", "Status"};
@@ -439,12 +463,67 @@ public class SessionSchedulePanel extends JPanel {
         UITheme.styleTable(table);
         dialog.add(new JScrollPane(table), BorderLayout.CENTER);
 
+        JPanel p = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
+        if (mainFrame != null && mainFrame.isTrainerOrAdmin()) {
+            JButton btnAdd = UITheme.createButton("➕ Add Staff to Session", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
+            btnAdd.addActionListener(e -> showQuickEnrollDialog(id, model));
+            p.add(btnAdd);
+        }
+
         JButton btnClose = UITheme.createButton("Close", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
         btnClose.addActionListener(e -> dialog.dispose());
-        JPanel p = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         p.add(btnClose);
-        dialog.add(p, BorderLayout.SOUTH);
 
+        dialog.add(p, BorderLayout.SOUTH);
         dialog.setVisible(true);
+    }
+
+    private void showQuickEnrollDialog(String sessionId, DefaultTableModel attendeeModel) {
+        List<com.stms.model.Employee> activeEmps = service.getAllEmployees().stream()
+                .filter(com.stms.model.Employee::isActive)
+                .collect(java.util.stream.Collectors.toList());
+
+        if (activeEmps.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No active staff members found to enroll.", "No Staff Available", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        JComboBox<com.stms.model.Employee> cbEmp = new JComboBox<>();
+        for (com.stms.model.Employee emp : activeEmps) {
+            cbEmp.addItem(emp);
+        }
+
+        JPanel p = new JPanel(new GridLayout(2, 1, 6, 8));
+        p.add(new JLabel("Select Staff Member to add to Session [" + sessionId + "]:"));
+        p.add(cbEmp);
+
+        int opt = JOptionPane.showConfirmDialog(mainFrame, p, "Add Staff to Session", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (opt == JOptionPane.OK_OPTION) {
+            com.stms.model.Employee selectedEmp = (com.stms.model.Employee) cbEmp.getSelectedItem();
+            if (selectedEmp == null) return;
+            try {
+                service.enrollStaff(selectedEmp.getId(), sessionId);
+                loadSessionsTable();
+                if (mainFrame != null) {
+                    mainFrame.refreshAllViews();
+                }
+                if (attendeeModel != null) {
+                    attendeeModel.setRowCount(0);
+                    for (Enrollment en : service.getEnrollmentsBySession(sessionId)) {
+                        attendeeModel.addRow(new Object[]{
+                                en.getId(),
+                                en.getEmployeeName(),
+                                en.isAttended() ? "Yes" : "No",
+                                (en.getScore() != null ? String.format("%.1f%%", en.getScore()) : "N/A"),
+                                en.getStatus().getLabel()
+                        });
+                    }
+                }
+                JOptionPane.showMessageDialog(this, "Staff " + selectedEmp.getFullName() + " successfully enrolled in Session " + sessionId + "!",
+                        "Enrollment Successful", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Failed to enroll: " + ex.getMessage(), "Enrollment Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 }

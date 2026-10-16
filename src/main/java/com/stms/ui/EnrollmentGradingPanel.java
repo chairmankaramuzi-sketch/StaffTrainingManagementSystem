@@ -52,34 +52,11 @@ public class EnrollmentGradingPanel extends JPanel {
     }
 
     private void initComponents() {
-        JPanel topBar = new JPanel(new BorderLayout(10, 10));
+        JPanel topBar = new JPanel(new BorderLayout(0, 10));
         topBar.setOpaque(false);
 
-        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        filterPanel.setOpaque(false);
-
-        JLabel lblSearch = new JLabel("🔍 Search:");
-        lblSearch.setFont(UITheme.FONT_BOLD);
-        txtSearch = UITheme.createTextField(12);
-        txtSearch.addActionListener(e -> loadEnrollmentsTable());
-
-        JLabel lblStatus = new JLabel("Status:");
-        lblStatus.setFont(UITheme.FONT_BOLD);
-        cbStatusFilter = UITheme.createComboBox(new String[]{
-                "All Statuses", "Registered", "Attended", "Passed & Certified", "Needs Retake", "Cancelled"
-        });
-        cbStatusFilter.addActionListener(e -> loadEnrollmentsTable());
-
-        JButton btnFilter = UITheme.createButton("Filter", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
-        btnFilter.addActionListener(e -> loadEnrollmentsTable());
-
-        filterPanel.add(lblSearch);
-        filterPanel.add(txtSearch);
-        filterPanel.add(lblStatus);
-        filterPanel.add(cbStatusFilter);
-        filterPanel.add(btnFilter);
-
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        // Row 1: Action Buttons
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         actionPanel.setOpaque(false);
 
         JButton btnEnroll = UITheme.createButton("➕ Enroll Staff", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
@@ -99,8 +76,41 @@ public class EnrollmentGradingPanel extends JPanel {
             actionPanel.add(btnCancel);
         }
 
-        topBar.add(filterPanel, BorderLayout.WEST);
-        topBar.add(actionPanel, BorderLayout.EAST);
+        // Row 2: Search & Filter Toolbar
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        filterPanel.setOpaque(false);
+
+        JLabel lblSearch = new JLabel("🔍 Search:");
+        lblSearch.setFont(UITheme.FONT_BOLD);
+        txtSearch = UITheme.createTextField(14);
+        txtSearch.addActionListener(e -> loadEnrollmentsTable());
+
+        JLabel lblStatus = new JLabel("Status:");
+        lblStatus.setFont(UITheme.FONT_BOLD);
+        cbStatusFilter = UITheme.createComboBox(new String[]{
+                "All Statuses", "Registered", "Attended", "Passed & Certified", "Needs Retake", "Cancelled"
+        });
+        cbStatusFilter.addActionListener(e -> loadEnrollmentsTable());
+
+        JButton btnFilter = UITheme.createButton("Filter", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
+        btnFilter.addActionListener(e -> loadEnrollmentsTable());
+
+        JButton btnReset = UITheme.createButton("Reset", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
+        btnReset.addActionListener(e -> {
+            txtSearch.setText("");
+            cbStatusFilter.setSelectedIndex(0);
+            loadEnrollmentsTable();
+        });
+
+        filterPanel.add(lblSearch);
+        filterPanel.add(txtSearch);
+        filterPanel.add(lblStatus);
+        filterPanel.add(cbStatusFilter);
+        filterPanel.add(btnFilter);
+        filterPanel.add(btnReset);
+
+        topBar.add(actionPanel, BorderLayout.NORTH);
+        topBar.add(filterPanel, BorderLayout.SOUTH);
         add(topBar, BorderLayout.NORTH);
 
         String[] columns = {"Enrollment ID", "Staff Name", "Staff ID", "Session ID", "Course Title", "Attended", "Score %", "Status", "Certificate ID"};

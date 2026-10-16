@@ -53,38 +53,11 @@ public class CourseCatalogPanel extends JPanel {
     }
 
     private void initComponents() {
-        JPanel topBar = new JPanel(new BorderLayout(10, 10));
+        JPanel topBar = new JPanel(new BorderLayout(0, 10));
         topBar.setOpaque(false);
 
-        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        filterPanel.setOpaque(false);
-
-        JLabel lblSearch = new JLabel("🔍 Search Course:");
-        lblSearch.setFont(UITheme.FONT_BOLD);
-        txtSearch = UITheme.createTextField(14);
-        txtSearch.addActionListener(e -> loadCoursesTable());
-
-        JLabel lblCat = new JLabel("Category:");
-        lblCat.setFont(UITheme.FONT_BOLD);
-        cbCategoryFilter = UITheme.createComboBox(new String[]{"All Categories", "Technical", "Soft Skills", "Compliance"});
-        cbCategoryFilter.addActionListener(e -> loadCoursesTable());
-
-        chkIncludeArchived = new JCheckBox("Include Archived");
-        chkIncludeArchived.setFont(UITheme.FONT_REGULAR);
-        chkIncludeArchived.setOpaque(false);
-        chkIncludeArchived.addActionListener(e -> loadCoursesTable());
-
-        JButton btnApply = UITheme.createButton("Filter", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
-        btnApply.addActionListener(e -> loadCoursesTable());
-
-        filterPanel.add(lblSearch);
-        filterPanel.add(txtSearch);
-        filterPanel.add(lblCat);
-        filterPanel.add(cbCategoryFilter);
-        filterPanel.add(chkIncludeArchived);
-        filterPanel.add(btnApply);
-
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        // Row 1: Action Buttons
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         actionPanel.setOpaque(false);
 
         JButton btnAdd = UITheme.createButton("➕ Add Course", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
@@ -107,8 +80,50 @@ public class CourseCatalogPanel extends JPanel {
             actionPanel.add(btnDelete);
         }
 
-        topBar.add(filterPanel, BorderLayout.WEST);
-        topBar.add(actionPanel, BorderLayout.EAST);
+        // Row 2: Search & Filter Toolbar
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        filterPanel.setOpaque(false);
+
+        JLabel lblSearch = new JLabel("🔍 Search Course:");
+        lblSearch.setFont(UITheme.FONT_BOLD);
+        txtSearch = UITheme.createTextField(14);
+        txtSearch.addActionListener(e -> loadCoursesTable());
+
+        JLabel lblCat = new JLabel("Category:");
+        lblCat.setFont(UITheme.FONT_BOLD);
+        cbCategoryFilter = UITheme.createComboBox(new String[]{"All Categories", "Technical", "Soft Skills", "Compliance"});
+        cbCategoryFilter.addActionListener(e -> loadCoursesTable());
+
+        chkIncludeArchived = new JCheckBox("Include Archived");
+        chkIncludeArchived.setFont(UITheme.FONT_REGULAR);
+        chkIncludeArchived.setOpaque(false);
+        chkIncludeArchived.addActionListener(e -> loadCoursesTable());
+
+        JButton btnApply = UITheme.createButton("Filter", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
+        btnApply.addActionListener(e -> loadCoursesTable());
+
+        JButton btnReset = UITheme.createButton("Reset", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
+        btnReset.addActionListener(e -> {
+            txtSearch.setText("");
+            cbCategoryFilter.setSelectedIndex(0);
+            chkIncludeArchived.setSelected(false);
+            loadCoursesTable();
+        });
+
+        filterPanel.add(lblSearch);
+        filterPanel.add(txtSearch);
+        filterPanel.add(lblCat);
+        filterPanel.add(cbCategoryFilter);
+        filterPanel.add(chkIncludeArchived);
+        filterPanel.add(btnApply);
+        filterPanel.add(btnReset);
+
+        if (mainFrame.isAdmin()) {
+            topBar.add(actionPanel, BorderLayout.NORTH);
+            topBar.add(filterPanel, BorderLayout.SOUTH);
+        } else {
+            topBar.add(filterPanel, BorderLayout.CENTER);
+        }
         add(topBar, BorderLayout.NORTH);
 
         String[] columns = {"ID", "Course Title", "Category", "Level", "Hours", "Capacity", "Cost", "Passing Req %", "Details / Requirements", "Status"};

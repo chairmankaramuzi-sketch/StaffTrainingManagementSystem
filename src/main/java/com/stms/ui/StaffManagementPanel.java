@@ -2,6 +2,7 @@ package com.stms.ui;
 
 import com.stms.model.Department;
 import com.stms.model.Employee;
+import com.stms.model.UserRole;
 import com.stms.service.TrainingManagerService;
 import com.stms.ui.components.UITheme;
 import java.awt.BorderLayout;
@@ -18,6 +19,7 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
@@ -50,10 +52,36 @@ public class StaffManagementPanel extends JPanel {
     }
 
     private void initComponents() {
-        // TOP: Filter Toolbar
-        JPanel topBar = new JPanel(new BorderLayout(10, 10));
+        // TOP: Action Bar + Filter Toolbar (2 clean rows to prevent any button collision)
+        JPanel topBar = new JPanel(new BorderLayout(0, 10));
         topBar.setOpaque(false);
 
+        // Row 1: Primary Action Buttons
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        actionPanel.setOpaque(false);
+
+        JButton btnAdd = UITheme.createButton("➕ Add Staff", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
+        btnAdd.addActionListener(e -> showAddEditStaffDialog(null));
+
+        JButton btnEdit = UITheme.createButton("✏️ Edit Selected", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
+        btnEdit.addActionListener(e -> editSelectedStaff());
+
+        JButton btnToggle = UITheme.createButton("🔄 Toggle Status", UITheme.PURPLE, UITheme.TEXT_LIGHT);
+        btnToggle.addActionListener(e -> toggleActiveSelectedStaff());
+
+        JButton btnDelete = UITheme.createButton("🗑️ Delete", UITheme.DANGER, UITheme.TEXT_LIGHT);
+        btnDelete.addActionListener(e -> deleteSelectedStaff());
+
+        JButton btnTranscript = UITheme.createButton("📄 Transcript", UITheme.SUCCESS, UITheme.TEXT_LIGHT);
+        btnTranscript.addActionListener(e -> viewSelectedTranscript());
+
+        actionPanel.add(btnAdd);
+        actionPanel.add(btnEdit);
+        actionPanel.add(btnToggle);
+        actionPanel.add(btnDelete);
+        actionPanel.add(btnTranscript);
+
+        // Row 2: Search & Filter Toolbar
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         filterPanel.setOpaque(false);
 
@@ -81,6 +109,14 @@ public class StaffManagementPanel extends JPanel {
         JButton btnFilter = UITheme.createButton("Filter", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
         btnFilter.addActionListener(e -> loadStaffTable());
 
+        JButton btnReset = UITheme.createButton("Reset", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
+        btnReset.addActionListener(e -> {
+            txtSearch.setText("");
+            cbDeptFilter.setSelectedIndex(0);
+            cbStatusFilter.setSelectedIndex(0);
+            loadStaffTable();
+        });
+
         filterPanel.add(lblSearch);
         filterPanel.add(txtSearch);
         filterPanel.add(lblFilter);
@@ -88,34 +124,10 @@ public class StaffManagementPanel extends JPanel {
         filterPanel.add(lblStatus);
         filterPanel.add(cbStatusFilter);
         filterPanel.add(btnFilter);
+        filterPanel.add(btnReset);
 
-        // Buttons Panel on Right
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        actionPanel.setOpaque(false);
-
-        JButton btnAdd = UITheme.createButton("➕ Add Staff", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
-        btnAdd.addActionListener(e -> showAddEditStaffDialog(null));
-
-        JButton btnEdit = UITheme.createButton("✏️ Edit Selected", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
-        btnEdit.addActionListener(e -> editSelectedStaff());
-
-        JButton btnToggle = UITheme.createButton("🔄 Toggle Status", UITheme.PURPLE, UITheme.TEXT_LIGHT);
-        btnToggle.addActionListener(e -> toggleActiveSelectedStaff());
-
-        JButton btnDelete = UITheme.createButton("🗑️ Delete", UITheme.DANGER, UITheme.TEXT_LIGHT);
-        btnDelete.addActionListener(e -> deleteSelectedStaff());
-
-        JButton btnTranscript = UITheme.createButton("📄 Transcript", UITheme.SUCCESS, UITheme.TEXT_LIGHT);
-        btnTranscript.addActionListener(e -> viewSelectedTranscript());
-
-        actionPanel.add(btnAdd);
-        actionPanel.add(btnEdit);
-        actionPanel.add(btnToggle);
-        actionPanel.add(btnDelete);
-        actionPanel.add(btnTranscript);
-
-        topBar.add(filterPanel, BorderLayout.WEST);
-        topBar.add(actionPanel, BorderLayout.EAST);
+        topBar.add(actionPanel, BorderLayout.NORTH);
+        topBar.add(filterPanel, BorderLayout.SOUTH);
         add(topBar, BorderLayout.NORTH);
 
         // CENTER: JTable
@@ -171,13 +183,18 @@ public class StaffManagementPanel extends JPanel {
         }
     }
 
-    private void showAddEditStaffDialog(Employee existing) {
+    public void showAddStaffDialog() {
+        showAddEditStaffDialog(null);
+    }
+
+    public void showAddEditStaffDialog(Employee existing) {
         JDialog dialog = new JDialog(mainFrame, existing == null ? "Register New Staff Member" : "Edit Staff Member", true);
         dialog.setLayout(new BorderLayout(16, 16));
-        dialog.setSize(440, 480);
+        dialog.setSize(480, existing == null ? 580 : 480);
         dialog.setLocationRelativeTo(mainFrame);
 
-        JPanel form = new JPanel(new GridLayout(8, 2, 10, 12));
+        int rows = existing == null ? 11 : 8;
+        JPanel form = new JPanel(new GridLayout(rows, 2, 10, 10));
         form.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
 
         JTextField tfId = UITheme.createTextField(15);
@@ -188,6 +205,11 @@ public class StaffManagementPanel extends JPanel {
         JTextField tfTitle = UITheme.createTextField(15);
         JComboBox<Department> cbDept = UITheme.createComboBox(Department.values());
         JCheckBox chkActive = new JCheckBox("Active Status", true);
+
+        JCheckBox chkAccount = new JCheckBox("Create Login Account", true);
+        JTextField tfUsername = UITheme.createTextField(15);
+        JPasswordField tfPassword = new JPasswordField(15);
+        tfPassword.setText("staff123");
 
         if (existing != null) {
             tfId.setText(existing.getId());
@@ -201,6 +223,7 @@ public class StaffManagementPanel extends JPanel {
             chkActive.setSelected(existing.isActive());
         } else {
             tfId.setText(service.getNextEmployeeId());
+            tfId.setEditable(false);
         }
 
         form.add(new JLabel("Staff ID (Auto):"));
@@ -220,8 +243,42 @@ public class StaffManagementPanel extends JPanel {
         form.add(new JLabel("Status:"));
         form.add(chkActive);
 
+        if (existing == null) {
+            form.add(new JLabel("Login Access:"));
+            form.add(chkAccount);
+            form.add(new JLabel("Account Username:"));
+            form.add(tfUsername);
+            form.add(new JLabel("Default Password:"));
+            form.add(tfPassword);
+
+            // Auto-fill username when email or names are typed
+            java.awt.event.FocusAdapter autoUser = new java.awt.event.FocusAdapter() {
+                @Override
+                public void focusLost(java.awt.event.FocusEvent e) {
+                    if (tfUsername.getText().trim().isEmpty()) {
+                        String em = tfEmail.getText().trim();
+                        if (em.contains("@")) {
+                            tfUsername.setText(em.substring(0, em.indexOf('@')).toLowerCase());
+                        } else {
+                            String f = tfFirst.getText().trim().toLowerCase();
+                            String l = tfLast.getText().trim().toLowerCase();
+                            if (!f.isEmpty() || !l.isEmpty()) {
+                                tfUsername.setText((f.isEmpty() ? "" : f) + (l.isEmpty() ? "" : "." + l));
+                            }
+                        }
+                    }
+                }
+            };
+            tfEmail.addFocusListener(autoUser);
+            tfLast.addFocusListener(autoUser);
+            chkAccount.addActionListener(e -> {
+                tfUsername.setEnabled(chkAccount.isSelected());
+                tfPassword.setEnabled(chkAccount.isSelected());
+            });
+        }
+
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
-        JButton btnSave = UITheme.createButton("💾 Save", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
+        JButton btnSave = UITheme.createButton("💾 Save Staff", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
         JButton btnCancel = UITheme.createButton("Cancel", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
 
         btnSave.addActionListener(e -> {
@@ -246,11 +303,46 @@ public class StaffManagementPanel extends JPanel {
                     JOptionPane.showMessageDialog(dialog, "Please enter a valid email address.", "Validation Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
+                if (title.isEmpty()) {
+                    title = "Staff Associate";
+                }
+
+                String username = tfUsername.getText().trim().toLowerCase();
+                String password = new String(tfPassword.getPassword()).trim();
+                boolean createLogin = (existing == null && chkAccount.isSelected());
+
+                if (createLogin) {
+                    if (username.isEmpty()) {
+                        if (email.contains("@")) {
+                            username = email.substring(0, email.indexOf('@')).toLowerCase();
+                        } else {
+                            username = (first + "." + last).toLowerCase();
+                        }
+                    }
+                    if (!username.matches("[a-z0-9._-]{3,50}")) {
+                        JOptionPane.showMessageDialog(dialog, "Username must be 3-50 alphanumeric characters (letters, numbers, dot, dash, underscore).",
+                                "Validation Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    if (mainFrame != null && mainFrame.getAuthService() != null && mainFrame.getAuthService().usernameExists(username)) {
+                        JOptionPane.showMessageDialog(dialog, "Username '" + username + "' is already taken. Please choose another.",
+                                "Validation Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    if (password.length() < 6) {
+                        JOptionPane.showMessageDialog(dialog, "Password must be at least 6 characters.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                }
 
                 if (existing == null) {
                     Employee newEmp = new Employee(empId, first, last, email, phone, dept, title, LocalDate.now());
                     newEmp.setActive(active);
                     service.registerEmployee(newEmp);
+
+                    if (createLogin && mainFrame != null && mainFrame.getAuthService() != null) {
+                        mainFrame.getAuthService().createUser(username, password, newEmp.getFullName(), UserRole.EMPLOYEE);
+                    }
                 } else {
                     existing.setFirstName(first);
                     existing.setLastName(last);
@@ -264,8 +356,14 @@ public class StaffManagementPanel extends JPanel {
 
                 dialog.dispose();
                 loadStaffTable();
-                mainFrame.refreshAllViews();
-                JOptionPane.showMessageDialog(this, "Employee record saved successfully in SQLite!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                if (mainFrame != null) {
+                    mainFrame.refreshAllViews();
+                }
+                String msg = (existing == null)
+                        ? "Employee " + first + " " + last + " [" + empId + "] registered successfully!"
+                                + (createLogin ? "\nLogin account created: '" + username + "'" : "")
+                        : "Employee record updated successfully!";
+                JOptionPane.showMessageDialog(this, msg, "Success", JOptionPane.INFORMATION_MESSAGE);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage(), "Input Error", JOptionPane.ERROR_MESSAGE);
             }

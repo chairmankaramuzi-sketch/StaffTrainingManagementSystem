@@ -97,6 +97,9 @@ public class DashboardPanel extends JPanel {
             refreshData();
         });
 
+        JButton btnAddStaff = UITheme.createButton("➕ Add Staff", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
+        btnAddStaff.addActionListener(e -> mainFrame.showAddStaffDialog());
+
         JButton btnGoEnroll = UITheme.createButton("📝 Quick Enroll Staff", UITheme.SUCCESS, UITheme.TEXT_LIGHT);
         btnGoEnroll.addActionListener(e -> mainFrame.switchToTab(5)); // tab 5: Enrollments
 
@@ -105,6 +108,7 @@ public class DashboardPanel extends JPanel {
 
         actionsBar.add(btnRefresh);
         if (mainFrame.isAdmin()) {
+            actionsBar.add(btnAddStaff);
             actionsBar.add(btnClearLogs);
         }
         if (mainFrame.isTrainerOrAdmin()) {

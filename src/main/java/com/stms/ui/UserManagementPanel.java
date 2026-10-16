@@ -1,14 +1,18 @@
 package com.stms.ui;
 
+import com.stms.model.Department;
+import com.stms.model.Employee;
 import com.stms.model.User;
 import com.stms.model.UserRole;
 import com.stms.service.AuthService;
 import com.stms.service.AuthService.UserAccount;
+import com.stms.service.TrainingManagerService;
 import com.stms.ui.components.UITheme;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.time.LocalDate;
 import java.util.Arrays;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -29,14 +33,18 @@ import javax.swing.table.DefaultTableModel;
 public class UserManagementPanel extends JPanel {
     static final int MIN_PASSWORD_LENGTH = 6;
 
+    private final TrainingManagerService trainingService;
     private final AuthService authService;
     private final User currentUser;
+    private final MainApplicationFrame mainFrame;
     private DefaultTableModel tableModel;
     private JTable table;
 
-    public UserManagementPanel(AuthService authService, User currentUser) {
+    public UserManagementPanel(TrainingManagerService trainingService, AuthService authService, User currentUser, MainApplicationFrame mainFrame) {
+        this.trainingService = trainingService;
         this.authService = authService;
         this.currentUser = currentUser;
+        this.mainFrame = mainFrame;
         setLayout(new BorderLayout(0, 12));
         setBackground(UITheme.BG_LIGHT);
         setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
@@ -44,18 +52,29 @@ public class UserManagementPanel extends JPanel {
         loadUsers();
     }
 
+    public UserManagementPanel(AuthService authService, User currentUser) {
+        this(null, authService, currentUser, null);
+    }
+
     private void initComponents() {
-        JPanel topBar = new JPanel(new BorderLayout());
+        JPanel topBar = new JPanel(new BorderLayout(0, 8));
         topBar.setOpaque(false);
 
         JLabel lblTitle = new JLabel("User Accounts");
         lblTitle.setFont(UITheme.FONT_TITLE);
         lblTitle.setForeground(UITheme.TEXT_PRIMARY);
 
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         actions.setOpaque(false);
 
-        JButton btnAdd = UITheme.createButton("Add User", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
+        JButton btnAddStaff = UITheme.createButton("➕ Add Staff Member", UITheme.PRIMARY, UITheme.TEXT_LIGHT);
+        btnAddStaff.addActionListener(e -> {
+            if (mainFrame != null) {
+                mainFrame.showAddStaffDialog();
+            }
+        });
+
+        JButton btnAdd = UITheme.createButton("Add User", UITheme.SECONDARY, UITheme.TEXT_LIGHT);
         btnAdd.addActionListener(e -> addUser());
         JButton btnEdit = UITheme.createButton("Edit", UITheme.PURPLE, UITheme.TEXT_LIGHT);
         btnEdit.addActionListener(e -> editUser());
@@ -66,14 +85,15 @@ public class UserManagementPanel extends JPanel {
         JButton btnDelete = UITheme.createButton("Delete", UITheme.DANGER, UITheme.TEXT_LIGHT);
         btnDelete.addActionListener(e -> deleteUser());
 
+        actions.add(btnAddStaff);
         actions.add(btnAdd);
         actions.add(btnEdit);
         actions.add(btnReset);
         actions.add(btnToggle);
         actions.add(btnDelete);
 
-        topBar.add(lblTitle, BorderLayout.WEST);
-        topBar.add(actions, BorderLayout.EAST);
+        topBar.add(lblTitle, BorderLayout.NORTH);
+        topBar.add(actions, BorderLayout.SOUTH);
         add(topBar, BorderLayout.NORTH);
 
         tableModel = new DefaultTableModel(new String[] {"Username", "Full Name", "Role", "Status"}, 0) {
@@ -152,9 +172,28 @@ public class UserManagementPanel extends JPanel {
             if (pw == null) {
                 continue;
             }
-            if (authService.createUser(username, pw, fullName, (UserRole) cbRole.getSelectedItem())) {
+            UserRole role = (UserRole) cbRole.getSelectedItem();
+            if (authService.createUser(username, pw, fullName, role)) {
                 loadUsers();
-                info("User '" + username + "' created.");
+                if (role == UserRole.EMPLOYEE && trainingService != null) {
+                    boolean empExists = trainingService.getAllEmployees().stream()
+                            .anyMatch(emp -> emp.getFullName().equalsIgnoreCase(fullName)
+                                    || emp.getEmail().equalsIgnoreCase(username + "@company.com"));
+                    if (!empExists) {
+                        String[] parts = fullName.split("\\s+", 2);
+                        String first = parts[0];
+                        String last = parts.length > 1 ? parts[1] : "";
+                        String email = username + "@company.com";
+                        Employee newEmp = new Employee(trainingService.getNextEmployeeId(), first, last, email, "",
+                                Department.ENGINEERING, "Staff Member", LocalDate.now());
+                        trainingService.registerEmployee(newEmp);
+                    }
+                }
+                if (mainFrame != null) {
+                    mainFrame.refreshAllViews();
+                }
+                info("User '" + username + "' created successfully"
+                        + (role == UserRole.EMPLOYEE ? " and added to Staff Directory." : "."));
             } else {
                 error("Could not create user. See console for details.");
             }

@@ -150,7 +150,7 @@ public class MainApplicationFrame extends JFrame {
         sessionPanel = new SessionSchedulePanel(service, this);
         enrollmentPanel = new EnrollmentGradingPanel(service, this);
         reportsPanel = new ReportsPanel(service, this);
-        userPanel = new UserManagementPanel(authService, currentUser);
+        userPanel = new UserManagementPanel(service, authService, currentUser, this);
 
         allPanels = new Component[] {
             dashboardPanel, staffPanel, trainerPanel, coursePanel, sessionPanel, enrollmentPanel, reportsPanel, userPanel
@@ -260,6 +260,16 @@ public class MainApplicationFrame extends JFrame {
         reportsPanel.selectEmployee(employeeId);
         reportsPanel.generateSelectedTranscript();
         switchToTab(6); // Go to Reports tab (index 6)
+    }
+
+    public void showAddStaffDialog() {
+        if (staffPanel != null) {
+            staffPanel.showAddStaffDialog();
+        }
+    }
+
+    public StaffManagementPanel getStaffPanel() {
+        return staffPanel;
     }
 
     public void refreshAllViews() {
